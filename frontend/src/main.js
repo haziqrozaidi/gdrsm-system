@@ -3,6 +3,7 @@ import './style.css'
 
 import { createApp } from 'vue'
 import PrimeVue from 'primevue/config';
+import router from './router'
 
 import App from './App.vue'
 import Noir from './presets/Noir.js';
@@ -14,5 +15,7 @@ app.use(PrimeVue, {
         preset: Noir
     }
 });
+
+app.use(router)
 
 app.mount('#app')
