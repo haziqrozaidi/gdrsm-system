@@ -10,7 +10,7 @@
         <div class="grow bg-gray-100 p-4">
             <div class="container mx-auto">
                 <h1 class="text-2xl font-bold mb-6 text-gray-800">Dashboard</h1>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Quick Stats Cards -->
                     <Card class="shadow-md">
@@ -42,14 +42,14 @@
                 <div class="mt-8">
                     <h2 class="text-xl font-semibold mb-4 text-gray-700">Quick Actions</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Button 
-                            label="Upload New Resource" 
-                            icon="pi pi-upload" 
+                        <Button
+                            label="Upload New Resource"
+                            icon="pi pi-upload"
                             class="p-button-primary w-full"
                         />
-                        <Button 
-                            label="Create Shared Folder" 
-                            icon="pi pi-folder-plus" 
+                        <Button
+                            label="Create Shared Folder"
+                            icon="pi pi-folder-plus"
                             class="p-button-secondary w-full"
                         />
                     </div>
