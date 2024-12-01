@@ -4,8 +4,13 @@
 
     const items = ref([
         {
-            label: 'Dashboard',
-            icon: 'pi pi-home'
+            label: 'Home',
+            items: [
+                {
+                    label: 'Dashboard',
+                    icon: 'pi pi-home'
+                }
+            ]
         },
         {
             label: 'Shared Resources',
