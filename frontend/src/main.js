@@ -4,6 +4,7 @@ import './style.css'
 import { createApp } from 'vue'
 import PrimeVue from 'primevue/config';
 import router from './router'
+import ToastService from 'primevue/toastservice';
 
 import App from './App.vue'
 import Noir from './presets/Noir.js';
@@ -17,5 +18,7 @@ app.use(PrimeVue, {
 });
 
 app.use(router)
+
+app.use(ToastService);
 
 app.mount('#app')
