@@ -33,6 +33,7 @@ sub startup ($self) {
   # Normal route to controller
   $r->get('/')->to('Example#welcome');
   $r->post('/api/users/register')->to('User#register');
+  $r->get('/api/resources')->to('Resource#getAllResources');
 }
 
 1;
