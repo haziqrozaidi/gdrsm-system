@@ -6,7 +6,7 @@
     import { ref } from "vue";
 
     const username = ref('');
-    const fullname = ref('');
+    const full_name = ref('');
     const email = ref('');
     const password = ref('');
     const faculty = ref(null);
@@ -18,6 +18,37 @@
         { name: 'Faculty of Education', code: 'FP' },
         { name: 'Faculty of Civil Engineering', code: 'FKA' }
     ]);
+
+    const registerUser = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/users/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username.value,
+                    full_name: full_name.value,
+                    email: email.value,
+                    password: password.value,
+                    faculty: faculty.value
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Success:', data);
+
+            alert('Account created successfully!');
+
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Failed to create account. Please try again.');
+        }
+    }
 </script>
 
 <template>
@@ -27,7 +58,7 @@
                 <h1 class="text-3xl font-bold text-center pb-4">Create your account</h1>
             </template>
             <template #content>
-                <form class="flex flex-col gap-4">
+                <form @submit.prevent="registerUser" class="flex flex-col gap-4">
                     <div class="flex flex-col gap-2">
                         <label for="username">Username</label>
                         <InputText
@@ -38,10 +69,10 @@
                         />
                     </div>
                     <div class="flex flex-col gap-2">
-                        <label for="fullname">Full Name</label>
+                        <label for="full_name">Full Name</label>
                         <InputText
-                            id="fullname"
-                            v-model="fullname"
+                            id="full_name"
+                            v-model="full_name"
                             required
                             class="w-full"
                         />
@@ -73,6 +104,7 @@
                             v-model="faculty"
                             :options="faculties"
                             optionLabel="name"
+                            optionValue="name"
                             placeholder="Select a faculty"
                             class="w-full"
                             required
