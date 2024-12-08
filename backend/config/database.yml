@@ -1,0 +1,5 @@
+---
+database:
+  dsn: 'dbi:mysql:database_name'
+  username: 'your_username'
+  password: 'your_password'
