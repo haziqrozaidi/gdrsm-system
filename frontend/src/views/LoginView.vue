@@ -7,8 +7,9 @@ import { useRouter } from "vue-router";
 
 const username = ref('12085'); // Default username for testing
 const password = ref('S808323'); // Default password for testing
-const router = useRouter();
 const session = ref(null);
+
+const router = useRouter(); // Get the router instance
 
 const handleLogin = async () => {
     console.log(`Attempting login with: ${username.value}, ${password.value}`);
@@ -27,8 +28,8 @@ const handleLogin = async () => {
             // Save session in sessionStorage
             sessionStorage.setItem("utmwebfc_session", JSON.stringify(session.value));
 
-            // Redirect or update UI as needed
-            alert(`Welcome, ${session.value.full_name}`);
+            // Redirect to the dashboard or another page
+            router.push({ name: 'dashboard' }); // Replace 'Dashboard' with your target route's name
         } else {
             console.log("Invalid login or empty response:", jsonResponse);
             alert("Invalid username or password.");
