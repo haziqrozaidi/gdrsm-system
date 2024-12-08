@@ -1,5 +1,6 @@
 <script setup>
     import { ref } from 'vue'
+    import { onMounted } from 'vue'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
@@ -17,6 +18,7 @@
         { name: 'Other', code: 'OTHER' }
     ])
 
+    const resources = ref([]);
     const files = ref([
         {
             id: 1,
@@ -157,6 +159,22 @@
     const deleteFile = (file) => {
         files.value = files.value.filter(f => f.id !== file.id)
     }
+
+    onMounted(async () => {
+        const url = 'http://127.0.0.1:3000/api/resources';
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const fetchedResources  = await response.json();
+            resources.value = fetchedResources;
+
+        } catch (error) {
+            console.error(error.message);
+        }
+    })
 </script>
 
 <template>
@@ -173,13 +191,15 @@
                     />
                 </div>
 
-                <DataTable :value="files" stripedRows>
+                <DataTable :value="resources" stripedRows>
                     <Column field="name" header="Name"></Column>
                     <Column field="type" header="Type"></Column>
-                    <Column field="size" header="Size"></Column>
-                    <Column field="uploadDate" header="Upload Date"></Column>
-                    <Column field="sharedBy" header="Shared By"></Column>
-                    <Column field="shareDate" header="Share Date"></Column>
+                    <Column field="description" header="Description"></Column>
+                    <Column field="owner" header="Owner"></Column>
+                    <Column field="link" header="Link"></Column>
+                    <Column field="date_created" header="Date Added"></Column>
+                    <Column field="session" header="Session"></Column>
+                    <Column field="semester" header="Semester"></Column>
                     <Column header="Actions">
                         <template #body="{ data }">
                             <div class="flex gap-2">
