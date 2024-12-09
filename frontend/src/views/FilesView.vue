@@ -176,7 +176,46 @@
         files.value = files.value.filter(f => f.id !== file.id)
     }
 
-    onMounted(async () => {
+    const saveResource = async () => {
+        const url = 'http://127.0.0.1:3000/api/resources';
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(resourceData.value)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Success:', data);
+
+            await fetchResources();
+
+            resourceData.value = {
+                name: '',
+                type: '',
+                description: '',
+                owner: '',
+                link: '',
+                session: '',
+                semester: '',
+                folder: '',
+                category: ''
+            };
+
+            showAddResourceDialog.value = false
+
+        } catch (error) {
+            console.error(error.message);
+        }
+    }
+
+    const fetchResources = async () => {
         const url = 'http://127.0.0.1:3000/api/resources';
         try {
             const response = await fetch(url);
@@ -184,13 +223,14 @@
                 throw new Error(`Response status: ${response.status}`);
             }
 
-            const fetchedResources  = await response.json();
+            const fetchedResources = await response.json();
             resources.value = fetchedResources;
-
         } catch (error) {
             console.error(error.message);
         }
-    })
+    }
+
+    onMounted(fetchResources)
 </script>
 
 <template>
