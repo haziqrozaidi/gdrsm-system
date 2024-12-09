@@ -34,6 +34,7 @@ sub startup ($self) {
   $r->get('/')->to('Example#welcome');
   $r->post('/api/users/register')->to('User#register');
   $r->get('/api/resources')->to('Resource#getAllResources');
+  $r->post('/api/resources')->to('Resource#addResource');
 }
 
 1;
