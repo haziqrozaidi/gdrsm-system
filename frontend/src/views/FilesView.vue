@@ -7,6 +7,7 @@
     import Dialog from 'primevue/dialog'
     import InputText from 'primevue/inputtext'
     import Dropdown from 'primevue/dropdown'
+    import Textarea from 'primevue/textarea';
     import Sidebar from '../components/Sidebar.vue'
 
     // File types dropdown options
@@ -19,6 +20,21 @@
     ])
 
     const resources = ref([]);
+
+    const resourceData = ref({
+        name: '',
+        type: '',
+        description: '',
+        owner: '',
+        link: '',
+        session: '',
+        semester: '',
+        folder: '',
+        category: ''
+    })
+
+    const showAddResourceDialog = ref(false);
+
     const files = ref([
         {
             id: 1,
@@ -185,9 +201,9 @@
                 <div class="flex justify-between mb-4">
                     <h2 class="text-2xl font-bold">File Management</h2>
                     <Button
-                        label="Add New File"
+                        label="Add New Resource"
                         icon="pi pi-plus"
-                        @click="openAddModal"
+                        @click="showAddResourceDialog = true"
                     />
                 </div>
 
@@ -275,6 +291,88 @@
                                 class="p-button-primary"
                             />
                         </div>
+                    </div>
+                </Dialog>
+
+                <Dialog v-model:visible="showAddResourceDialog" modal header="Add New Resource" :style="{ width: '30rem' }">
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="name" class="font-semibold w-24">Name</label>
+                        <InputText id="name" v-model="resourceData.name" class="flex-auto" autocomplete="off" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="type" class="font-semibold w-24">Type</label>
+                        <Dropdown 
+                            id="type"
+                            v-model="resourceData.type"
+                            :options="['File', 'Folder']" 
+                            class="flex-auto" 
+                            placeholder="Select Type"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="description" class="font-semibold w-24">Description</label>
+                        <Textarea id="description" v-model="resourceData.description" class="flex-auto" rows="3" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="owner" class="font-semibold w-24">Owner</label>
+                        <InputText id="owner" v-model="resourceData.owner" type="email" class="flex-auto" autocomplete="off" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="link" class="font-semibold w-24">Link</label>
+                        <InputText id="link" v-model="resourceData.link" class="flex-auto" autocomplete="off" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="session" class="font-semibold w-24">Session</label>
+                        <Dropdown 
+                            id="session"
+                            v-model="resourceData.session"
+                            :options="['2023/2024', '2024/2025', '2025/2026']" 
+                            class="flex-auto" 
+                            placeholder="Select Session"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="semester" class="font-semibold w-24">Semester</label>
+                        <Dropdown 
+                            id="semester"
+                            v-model="resourceData.semester"
+                            :options="['1', '2', '3']" 
+                            class="flex-auto" 
+                            placeholder="Select Semester"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="folder" class="font-semibold w-24">Folder</label>
+                        <Dropdown 
+                            id="folder" 
+                            v-model="resourceData.folder"
+                            :options="['Folder 1', 'Folder 2', 'Folder 3']" 
+                            class="flex-auto" 
+                            placeholder="Select Folder"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-8">
+                        <label for="category" class="font-semibold w-24">Category</label>
+                        <Dropdown 
+                            id="category" 
+                            v-model="resourceData.category"
+                            :options="['Category 1', 'Category 2', 'Category 3']" 
+                            class="flex-auto" 
+                            placeholder="Select Category"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button type="button" label="Cancel" severity="secondary" @click="showAddResourceDialog = false"></Button>
+                        <Button type="button" label="Save" @click="saveResource"></Button>
                     </div>
                 </Dialog>
             </div>
