@@ -1,28 +1,12 @@
-use Mojolicious::Lite;
+package backend::Controller::User;
+
 use Mojo::UserAgent;
 use Data::Dumper;
+use DBI;
+use Mojo::Base 'Mojolicious::Controller', -strict, -signatures;
+use YAML::XS 'LoadFile';
 
-
-# Hook to handle CORS
-hook before_dispatch => sub {
-    my $c = shift;
-
-    # Add CORS headers
-    $c->res->headers->header('Access-Control-Allow-Origin' => 'http://localhost:5173');
-    $c->res->headers->header('Access-Control-Allow-Credentials' => 'true');
-    $c->res->headers->header('Access-Control-Allow-Methods' => 'GET, POST, OPTIONS');
-    $c->res->headers->header('Access-Control-Allow-Headers' => 'Content-Type, Authorization');
-
-    # Handle preflight (OPTIONS) requests
-    if ($c->req->method eq 'OPTIONS') {
-        $c->respond_to(any => {data => '', status => 200});
-        return;
-    }
-};
-
-
-
-post '/api/login' => sub {
+sub login {
     my $c = shift;
 
     # Retrieve JSON data from the request body
@@ -59,5 +43,5 @@ post '/api/login' => sub {
     }
 };
 
-app->start;
+1;
 

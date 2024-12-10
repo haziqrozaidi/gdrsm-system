@@ -11,13 +11,13 @@ const session = ref(null);
 
 const router = useRouter(); // Get the router instance
 
-const handleLogin = async () => {
+const login = async () => {
     console.log(`Attempting login with: ${username.value}, ${password.value}`);
 
-    const loginURL = "http://127.0.0.1:3000/api/login"; // Replace with your backend URL
+    const loginURL = "http://127.0.0.1:3000/api/users/login"; // Replace with your backend URL
 
     try {
-        const response = await fetch('http://127.0.0.1:3000/api/login', {
+        const response = await fetch('http://127.0.0.1:3000/api/users/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -26,7 +26,6 @@ const handleLogin = async () => {
                 "username": username.value,
                 "password": password.value
             }),
-            credentials: 'include',
         });
 
         const jsonResponse = await response.json();
@@ -47,7 +46,7 @@ const handleLogin = async () => {
         console.error("Error during login:", error);
         alert("An error occurred. Please try again.");
     }
-};
+}
 </script>
 
 <template>
@@ -66,7 +65,7 @@ const handleLogin = async () => {
                         <label for="password">Password</label>
                         <InputText id="password" v-model="password" type="password" required class="w-full" />
                     </div>
-                    <Button class="w-full mt-4" label="Sign in" @click="handleLogin" />
+                    <Button class="w-full mt-4" label="Sign in" @click="login" />
                     <p class="text-center">
                         Don't have an account?
                         <RouterLink to="/register" class="text-black hover:underline font-semibold duration-300">Sign up
