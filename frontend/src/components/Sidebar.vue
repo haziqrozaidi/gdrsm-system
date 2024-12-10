@@ -44,7 +44,8 @@
                 },
                 {
                     label: 'Search',
-                    icon: 'pi pi-search'
+                    icon: 'pi pi-search',
+                    route:'/search'
                 }
             ]
         },

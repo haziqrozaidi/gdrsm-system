@@ -6,6 +6,7 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import FilesView from '../views/FilesView.vue'
 import FoldersView from '../views/FoldersView.vue'
+import SearchView from '../views/SearchView.vue'
 
 const routes = [
   {
@@ -37,6 +38,11 @@ const routes = [
     path: '/folders',
     name: 'folders',
     component: FoldersView
+  },
+  {
+    path: '/search',
+    name: 'search',
+    component: SearchView
   }
 ]
 
