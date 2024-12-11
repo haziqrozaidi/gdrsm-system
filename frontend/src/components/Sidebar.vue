@@ -54,7 +54,8 @@
             items: [
                 {
                     label: 'Settings',
-                    icon: 'pi pi-cog'
+                    icon: 'pi pi-cog',
+                    route:'/setting'
                 },
                 {
                     label: 'Logout',
