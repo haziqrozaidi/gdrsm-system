@@ -3,25 +3,13 @@ use DBI;
 use Mojo::Base 'Mojolicious::Controller', -strict, -signatures;
 use YAML::XS 'LoadFile';
 
-sub register {
-  my $c = shift;
-
-  my $user = $c->req->json;
-
-  # Input validation
-  unless ($user->{username} && $user->{full_name} && $user->{email} && $user->{password} && $user->{faculty}) {
-    return $c->render(
-      json => {error => 'Missing required fields'}, 
-      status => 400
-    );
-  }
-
+sub register ($c, $user, $password) {
   # Load database configuration
   my $config = eval { LoadFile('config/database.yml') };
 
   if ($@) {
     return $c->render(
-      json => {error => 'Could not load database configuration'}, 
+      json => {error => 'Could not load database configuration'},
       status => 500
     );
   }
@@ -40,7 +28,7 @@ sub register {
 
   if ($@) {
     return $c->render(
-      json => {error => 'Database connection failed: ' . $@}, 
+      json => {error => 'Database connection failed: ' . $@},
       status => 500
     );
   }
@@ -49,14 +37,15 @@ sub register {
   my $sth = eval {
     my $prep = $dbh->prepare(
       'INSERT INTO user (username, full_name, email, password, role, faculty)
-      VALUES (?, ?, ?, ?, "student", ?)'
+      VALUES (?, ?, ?, ?, ?, ?)'
     );
     $prep->execute(
-      $user->{username}, 
-      $user->{full_name}, 
-      $user->{email}, 
-      $user->{password},
-      $user->{faculty}
+      $user->{login_name},
+      $user->{full_name},
+      $user->{email},
+      $password,
+      $user->{description},
+      ''
     );
     $dbh->commit;
     $prep;
@@ -66,7 +55,7 @@ sub register {
     $dbh->rollback;
     $dbh->disconnect;
     return $c->render(
-      json => {error => 'Registration failed: ' . $@}, 
+      json => {error => 'Registration failed: ' . $@},
       status => 500
     );
   }
