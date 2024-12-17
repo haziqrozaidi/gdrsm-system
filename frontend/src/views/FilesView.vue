@@ -181,6 +181,7 @@
         try {
             const response = await fetch('http://127.0.0.1:3000/api/resources', {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -218,7 +219,14 @@
     const fetchResources = async () => {
         const url = 'http://127.0.0.1:3000/api/resources';
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
             }
@@ -239,7 +247,7 @@
         <div class="grow bg-gray-100 p-4">
             <div class="card">
                 <div class="flex justify-between mb-4">
-                    <h2 class="text-2xl font-bold">File Management</h2>
+                    <h2 class="text-2xl font-bold">Resource Management</h2>
                     <Button
                         label="Add New Resource"
                         icon="pi pi-plus"
@@ -342,11 +350,11 @@
 
                     <div class="flex items-center gap-4 mb-4">
                         <label for="type" class="font-semibold w-24">Type</label>
-                        <Dropdown 
+                        <Dropdown
                             id="type"
                             v-model="resourceData.type"
-                            :options="['File', 'Folder']" 
-                            class="flex-auto" 
+                            :options="['File', 'Folder']"
+                            class="flex-auto"
                             placeholder="Select Type"
                         />
                     </div>
@@ -368,44 +376,44 @@
 
                     <div class="flex items-center gap-4 mb-4">
                         <label for="session" class="font-semibold w-24">Session</label>
-                        <Dropdown 
+                        <Dropdown
                             id="session"
                             v-model="resourceData.session"
-                            :options="['2023/2024', '2024/2025', '2025/2026']" 
-                            class="flex-auto" 
+                            :options="['2023/2024', '2024/2025', '2025/2026']"
+                            class="flex-auto"
                             placeholder="Select Session"
                         />
                     </div>
 
                     <div class="flex items-center gap-4 mb-4">
                         <label for="semester" class="font-semibold w-24">Semester</label>
-                        <Dropdown 
+                        <Dropdown
                             id="semester"
                             v-model="resourceData.semester"
-                            :options="['1', '2', '3']" 
-                            class="flex-auto" 
+                            :options="['1', '2', '3']"
+                            class="flex-auto"
                             placeholder="Select Semester"
                         />
                     </div>
 
                     <div class="flex items-center gap-4 mb-4">
                         <label for="folder" class="font-semibold w-24">Folder</label>
-                        <Dropdown 
-                            id="folder" 
+                        <Dropdown
+                            id="folder"
                             v-model="resourceData.folder"
-                            :options="['Folder 1', 'Folder 2', 'Folder 3']" 
-                            class="flex-auto" 
+                            :options="['Folder 1', 'Folder 2', 'Folder 3']"
+                            class="flex-auto"
                             placeholder="Select Folder"
                         />
                     </div>
 
                     <div class="flex items-center gap-4 mb-8">
                         <label for="category" class="font-semibold w-24">Category</label>
-                        <Dropdown 
-                            id="category" 
+                        <Dropdown
+                            id="category"
                             v-model="resourceData.category"
-                            :options="['Category 1', 'Category 2', 'Category 3']" 
-                            class="flex-auto" 
+                            :options="['Category 1', 'Category 2', 'Category 3']"
+                            class="flex-auto"
                             placeholder="Select Category"
                         />
                     </div>

@@ -7,18 +7,18 @@ import { useRouter } from "vue-router";
 
 const username = ref('12085'); // Default username for testing
 const password = ref('S808323'); // Default password for testing
-const session = ref(null);
 
 const router = useRouter(); // Get the router instance
 
 const login = async () => {
     console.log(`Attempting login with: ${username.value}, ${password.value}`);
 
-    const loginURL = "http://127.0.0.1:3000/api/users/login"; // Replace with your backend URL
+    const url = "http://127.0.0.1:3000/api/users/login";
 
     try {
-        const response = await fetch('http://127.0.0.1:3000/api/users/login', {
+        const response = await fetch(url, {
             method: 'POST',
+            credentials: 'include',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -34,7 +34,12 @@ const login = async () => {
             console.log("Login successful:", jsonResponse);
 
             // Save session in sessionStorage
-            sessionStorage.setItem("utmwebfc_session", JSON.stringify(jsonResponse));
+            sessionStorage.setItem("user", JSON.stringify({
+                full_name: jsonResponse.full_name,
+                login_name: jsonResponse.login_name,
+                email: jsonResponse.email,
+                description: jsonResponse.description,
+            }));
 
             // Redirect to the dashboard or another page
             router.push({ name: "dashboard" }); // Replace 'Dashboard' with your target route's name
@@ -56,7 +61,7 @@ const login = async () => {
                 <h1 class="text-3xl font-bold text-center pb-4">Sign in to your account</h1>
             </template>
             <template #content>
-                <form class="flex flex-col gap-4" @submit.prevent="handleLogin">
+                <form class="flex flex-col gap-4" @submit.prevent="login">
                     <div class="flex flex-col gap-2">
                         <label for="username">Username</label>
                         <InputText id="username" v-model="username" required class="w-full" />

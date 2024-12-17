@@ -5,6 +5,22 @@
 
     const router = useRouter();
 
+    const logout = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/users/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                sessionStorage.removeItem("user");
+                router.push('/login');
+            }
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    }
+
     const items = ref([
         {
             label: 'Home',
@@ -20,7 +36,7 @@
             label: 'Shared Resources',
             items: [
                 {
-                    label: 'Files',
+                    label: 'Resources',
                     icon: 'pi pi-file',
                     route: '/files'
                 },
@@ -59,7 +75,8 @@
                 },
                 {
                     label: 'Logout',
-                    icon: 'pi pi-sign-out'
+                    icon: 'pi pi-sign-out',
+                    command: logout
                 }
             ]
         }
