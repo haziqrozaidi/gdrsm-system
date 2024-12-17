@@ -13,7 +13,7 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: HomeView
+    component: LoginView
   },
   {
     path: '/register',
@@ -28,27 +28,32 @@ const routes = [
   {
     path: '/dashboard',
     name: 'dashboard',
-    component: DashboardView
+    component: DashboardView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/files',
     name: 'files',
-    component: FilesView
+    component: FilesView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/folders',
     name: 'folders',
-    component: FoldersView
+    component: FoldersView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/search',
     name: 'search',
-    component: SearchView
+    component: SearchView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/setting',
     name: 'setting',
-    component: SettingView
+    component: SettingView,
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -56,5 +61,16 @@ const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!sessionStorage.getItem("user");
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+
+  if (requiresAuth && !isAuthenticated) {
+    next('/login');
+  } else {
+    next();
+  }
+});
 
 export default router
