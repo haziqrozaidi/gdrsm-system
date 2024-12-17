@@ -7,6 +7,8 @@ import DashboardView from '../views/DashboardView.vue'
 import FilesView from '../views/FilesView.vue'
 import FoldersView from '../views/FoldersView.vue'
 import SearchView from '../views/SearchView.vue'
+import SettingView from '../views/SettingView.vue'
+import TestingView from '../views/TestingView.vue'
 
 const routes = [
   {
@@ -43,6 +45,17 @@ const routes = [
     path: '/search',
     name: 'search',
     component: SearchView
+  },
+  {
+    path: '/setting',
+    name: 'setting',
+    component: SettingView
+  },
+  {
+    path: '/testing',
+    name: 'testing',
+    component: TestingView
+
   }
 ]
 
