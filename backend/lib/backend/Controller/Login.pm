@@ -12,10 +12,10 @@ sub login {
 
     # Retrieve JSON data from the request body
     my $data = $c->req->json;
-    
+
     my $username = $data->{username};
     my $password = $data->{password};
-    
+
     # Call the third-party API
     my $ua      = Mojo::UserAgent->new;
     my $url     = "http://web.fc.utm.my/ttms/web_man_webservice_json.cgi?entity=authentication&login=$username&password=$password";
@@ -82,6 +82,19 @@ sub login {
             $sth->finish;
             $dbh->disconnect;
 
+            # Create a session
+            $c->session(
+                full_name   => $json->[0]->{full_name},
+                description => $json->[0]->{description},
+                login_name  => $json->[0]->{login_name},
+                email       => $json->[0]->{email},
+                logged_in   => 1,
+                expiration  => time + (8 * 60 * 60)  # 8 hours
+            );
+
+            # Log session contents before rendering
+            $c->app->log->info("Session created: " . Dumper($c->session));
+
             $c->render(json => {
                 success      => \1,
                 session_id   => $json->[0]->{session_id},
@@ -103,6 +116,24 @@ sub login {
         );
     }
 };
+
+sub logout {
+    my $c = shift;
+
+    # Log session contents before destroying
+    $c->app->log->info("Session before logout: " . Dumper($c->session));
+
+    # Destroy the session
+    $c->session(expires => 1);
+
+    # Log session contents after destroying
+    $c->app->log->info("Session after logout: " . Dumper($c->session));
+
+    $c->render(json => {
+        success => \1,
+        message => 'Logged out successfully'
+    });
+}
 
 1;
 
