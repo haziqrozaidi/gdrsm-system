@@ -8,6 +8,16 @@ sub getAllResources {
 
   my $user = $c->req->json;
 
+  # Get the username from the session
+  my $username = $c->session('login_name');
+
+  unless ($username) {
+    return $c->render(
+      json => {error => 'User not authenticated'},
+      status => 401
+    );
+  }
+
   # Load database configuration
   my $config = eval { LoadFile('config/database.yml') };
 
@@ -37,13 +47,11 @@ sub getAllResources {
     );
   }
 
-  # Prepare and execute insert
-  my $sth = eval {
+  my $user_sth = eval {
     my $prep = $dbh->prepare(
-      'SELECT * FROM resource'
+      'SELECT user_id FROM user WHERE username = ?'
     );
-    $prep->execute;
-    $dbh->commit;
+    $prep->execute($username);
     $prep;
   };
 
@@ -51,7 +59,38 @@ sub getAllResources {
     $dbh->rollback;
     $dbh->disconnect;
     return $c->render(
-      json => {error => 'Fetching failed: ' . $@},
+      json => {error => 'Fetching user_id failed: ' . $@},
+      status => 500
+    );
+  }
+
+  my $user_row = $user_sth->fetchrow_hashref;
+  $user_sth->finish;
+
+  unless ($user_row && $user_row->{user_id}) {
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'User not found'},
+      status => 404
+    );
+  }
+
+  my $user_id = $user_row->{user_id};
+
+  # Prepare and execute insert
+  my $sth = eval {
+    my $prep = $dbh->prepare(
+      'SELECT * FROM resource WHERE user_id = ?'
+    );
+    $prep->execute($user_id);
+    $prep;
+  };
+
+  if ($@) {
+    $dbh->rollback;
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Fetching resources failed: ' . $@},
       status => 500
     );
   }
