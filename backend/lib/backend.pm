@@ -69,6 +69,7 @@ sub startup ($self) {
 
   $authorized->get('/api/resources')->to('Resource#getAllResources');
   $authorized->post('/api/resources')->to('Resource#addResource');
+  $authorized->get('/api/categories')->to('Category#getAllCategories');
 }
 
 1;

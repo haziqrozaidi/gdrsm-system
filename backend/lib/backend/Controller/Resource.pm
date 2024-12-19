@@ -190,7 +190,7 @@ sub addResource {
   my $sth = eval {
     my $prep = $dbh->prepare(
       'INSERT INTO resource (link, name, type, description, owner, session, semester, user_id, folder_id, category_id)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)'
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)'
     );
     $prep->execute(
       $resource->{link},
@@ -200,7 +200,8 @@ sub addResource {
       $email,
       $resource->{session},
       $resource->{semester},
-      $user_id
+      $user_id,
+      $resource->{category}
     );
     $dbh->commit;
     $prep;
