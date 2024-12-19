@@ -22,6 +22,8 @@
 
     const resources = ref([]);
     const categories = ref([]);
+    const folders = ref([]);
+    const user = ref({})
 
     const categoryOptions = computed(() => {
         return categories.value.map(category => ({
@@ -30,11 +32,19 @@
         }))
     })
 
+    const folderOptions = computed(() => {
+        return folders.value.map(folder => ({
+            name: folder.name,
+            folder_id: folder.folder_id
+        }))
+    })
+
+
     const resourceData = ref({
         name: '',
         type: '',
         description: '',
-        owner: '',
+        owner: computed(() => user.value.email),
         link: '',
         session: '',
         semester: '',
@@ -207,10 +217,10 @@
             await fetchResources();
 
             resourceData.value = {
+                ...resourceData.value,
                 name: '',
                 type: '',
                 description: '',
-                owner: '',
                 link: '',
                 session: '',
                 semester: '',
@@ -268,9 +278,44 @@
         }
     }
 
+    const fetchFolders = async () => {
+        const url = 'http://127.0.0.1:3000/api/folders';
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            folders.value = await response.json();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
     onMounted(() => {
         fetchResources();
         fetchCategories();
+        fetchFolders();
+
+        // Retrieve user from sessionStorage
+        const userString = sessionStorage.getItem('user')
+        
+        if (userString) {
+            try {
+                // Parse the JSON string
+                user.value = JSON.parse(userString)
+            } catch (error) {
+                console.error('Error parsing user from sessionStorage:', error)
+            }
+        }
     })
 </script>
 
@@ -399,7 +444,7 @@
 
                     <div class="flex items-center gap-4 mb-4">
                         <label for="owner" class="font-semibold w-24">Owner</label>
-                        <InputText id="owner" v-model="resourceData.owner" type="email" class="flex-auto" autocomplete="off" />
+                        <InputText id="owner" v-model="resourceData.owner" type="email" class="flex-auto" autocomplete="off" disabled />
                     </div>
 
                     <div class="flex items-center gap-4 mb-4">
@@ -434,7 +479,9 @@
                         <Dropdown
                             id="folder"
                             v-model="resourceData.folder"
-                            :options="['Folder 1', 'Folder 2', 'Folder 3']"
+                            :options="folderOptions"
+                            optionLabel="name"
+                            optionValue="folder_id"
                             class="flex-auto"
                             placeholder="Select Folder"
                         />
