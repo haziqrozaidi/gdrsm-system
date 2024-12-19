@@ -26,6 +26,21 @@
           :class="inputClass"
         />
 
+        <button 
+          @click="savePersonalDetails" 
+          class="btn save-btn bg-blue-600 text-white py-1 px-3 text-sm rounded-md hover:bg-blue-700 w-32">
+          Change
+        </button>
+        
+      </div>
+    </div>
+
+    <!-- Password Settings -->
+    <div class="settings-section mb-8">
+      <h2 class="section-title text-2xl font-medium mb-4 border-b pb-2" :class="[textColorClass, borderColorClass]">
+        Password Settings
+      </h2>
+      <div class="section-content flex flex-col gap-4">
         <label for="oldPassword" :class="labelClass">Old Password</label>
         <input
           type="password"
@@ -44,12 +59,10 @@
           :class="inputClass"
         />
 
-        <button
-          @click="changePassword"
-          class="btn save-btn py-1 px-3 text-sm rounded-md w-32"
-          :class="buttonClass"
-        >
-          Changed
+        <button 
+          @click="changePassword" 
+          class="btn save-btn bg-blue-600 text-white py-1 px-3 text-sm rounded-md hover:bg-blue-700 w-32">
+          Change
         </button>
 
         <p v-if="passwordError" class="text-red-500 text-sm">{{ passwordError }}</p>
@@ -110,11 +123,9 @@
           Push Notifications
         </label>
 
-        <button
-          @click="saveNotificationSettings"
-          class="btn save-btn py-1 px-3 text-sm rounded-md w-32"
-          :class="buttonClass"
-        >
+        <button 
+          @click="saveNotificationSettings" 
+          class="btn save-btn bg-blue-600 text-white py-1 px-3 text-sm rounded-md hover:bg-blue-700 w-32">
           Save Notifications
         </button>
       </div>
@@ -126,20 +137,19 @@
         Privacy Settings
       </h2>
       <div class="section-content flex flex-col gap-4">
-        <button
-          @click="viewHistory"
-          class="btn view-btn py-1 px-3 text-sm rounded-md w-32"
-          :class="buttonClass"
-        >
+        
+        <button 
+          @click="viewHistory" 
+          class="btn save-btn bg-blue-600 text-white py-1 px-3 text-sm rounded-md hover:bg-blue-700 w-32">
           View History
         </button>
 
-        <button
-          @click="clearHistory"
-          class="btn clear-btn py-1 px-3 text-sm rounded-md w-32 bg-red-600 hover:bg-red-700 text-white"
-        >
+        <button 
+          @click="clearHistory" 
+          class="btn save-btn bg-blue-600 text-white py-1 px-3 text-sm rounded-md hover:bg-blue-700 w-32">
           Clear History
         </button>
+
       </div>
     </div>
   </div>
@@ -190,6 +200,22 @@ export default {
     },
   },
   methods: {
+    async savePersonalDetails() {
+      try {
+        const response = await this.updateUserDetails(this.accountSettings);
+
+        if (response.success) {
+          alert('Personal details updated successfully!');
+          this.loadUserDetails();
+        } else {
+          alert('Failed to update details. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error updating user details:', error);
+        alert('An error occurred. Please try again later.');
+      }
+    },
+
     changePassword() {
       if (this.password.oldPassword !== 'correct_password') {
         this.passwordError = 'The old password is incorrect. Please try again.';
