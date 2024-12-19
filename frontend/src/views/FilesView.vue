@@ -1,6 +1,7 @@
 <script setup>
     import { ref } from 'vue'
     import { onMounted } from 'vue'
+    import { computed } from 'vue'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
@@ -20,6 +21,14 @@
     ])
 
     const resources = ref([]);
+    const categories = ref([]);
+
+    const categoryOptions = computed(() => {
+        return categories.value.map(category => ({
+            name: category.name,
+            category_id: category.category_id
+        }))
+    })
 
     const resourceData = ref({
         name: '',
@@ -231,14 +240,38 @@
                 throw new Error(`Response status: ${response.status}`);
             }
 
-            const fetchedResources = await response.json();
-            resources.value = fetchedResources;
+            resources.value = await response.json();
         } catch (error) {
             console.error(error.message);
         }
     }
 
-    onMounted(fetchResources)
+    const fetchCategories = async () => {
+        const url = 'http://127.0.0.1:3000/api/categories';
+
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            categories.value = await response.json();
+        } catch (error) {
+            console.log(error.message);
+        }
+    }
+
+    onMounted(() => {
+        fetchResources();
+        fetchCategories();
+    })
 </script>
 
 <template>
@@ -412,7 +445,9 @@
                         <Dropdown
                             id="category"
                             v-model="resourceData.category"
-                            :options="['Category 1', 'Category 2', 'Category 3']"
+                            :options="categoryOptions"
+                            optionLabel="name"
+                            optionValue="category_id"
                             class="flex-auto"
                             placeholder="Select Category"
                         />
