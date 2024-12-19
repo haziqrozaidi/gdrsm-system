@@ -11,8 +11,8 @@ sub getAllCategories {
 
     if ($@) {
         return $c->render(
-            json => {error => 'User not authenticated'},
-            status => 401
+            json => {error => 'Could not load database configuration'},
+            status => 500
         );
     }
 
