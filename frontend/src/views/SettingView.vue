@@ -1,46 +1,145 @@
 <template>
-  <div class="settings-container">
-    <h1 class="settings-title">Settings</h1>
+  <div :class="['settings-container p-6 rounded-lg shadow-md', themeClass]">
+    <h1 class="settings-title text-3xl font-semibold mb-6" :class="textColorClass">Settings</h1>
 
-    <div class="settings-section">
-      <h2 class="section-title">Account Settings</h2>
-      <div class="section-content">
-        <label for="username" class="settings-label">Username</label>
-        <input type="text" id="username" v-model="accountSettings.username" class="settings-input" />
+    <!-- Account Settings -->
+    <div class="settings-section mb-8">
+      <h2 class="section-title text-2xl font-medium mb-4 border-b pb-2" :class="[textColorClass, borderColorClass]">
+        Account Settings
+      </h2>
+      <div class="section-content flex flex-col gap-4">
+        <label for="username" :class="labelClass">Username</label>
+        <input
+          type="text"
+          id="username"
+          v-model="accountSettings.username"
+          class="settings-input p-2 border-2 rounded-md w-full"
+          :class="inputClass"
+        />
 
-        <label for="email" class="settings-label">Email</label>
-        <input type="email" id="email" v-model="accountSettings.email" class="settings-input" />
+        <label for="email" :class="labelClass">Email</label>
+        <input
+          type="email"
+          id="email"
+          v-model="accountSettings.email"
+          class="settings-input p-2 border-2 rounded-md w-full"
+          :class="inputClass"
+        />
 
-        <button @click="saveAccountSettings" class="btn save-btn">Save Changes</button>
+        <label for="oldPassword" :class="labelClass">Old Password</label>
+        <input
+          type="password"
+          id="oldPassword"
+          v-model="password.oldPassword"
+          class="settings-input p-2 border-2 rounded-md w-full"
+          :class="inputClass"
+        />
+
+        <label for="newPassword" :class="labelClass">New Password</label>
+        <input
+          type="password"
+          id="newPassword"
+          v-model="password.newPassword"
+          class="settings-input p-2 border-2 rounded-md w-full"
+          :class="inputClass"
+        />
+
+        <button
+          @click="changePassword"
+          class="btn save-btn py-1 px-3 text-sm rounded-md w-32"
+          :class="buttonClass"
+        >
+          Changed
+        </button>
+
+        <p v-if="passwordError" class="text-red-500 text-sm">{{ passwordError }}</p>
       </div>
     </div>
 
-    <div class="settings-section">
-      <h2 class="section-title">Appearance</h2>
-      <div class="section-content">
-        <label for="theme" class="settings-label">Theme</label>
-        <select id="theme" v-model="appearanceSettings.theme" class="settings-select">
+    <!-- Appearance Settings -->
+    <div class="settings-section mb-8">
+      <h2 class="section-title text-2xl font-medium mb-4 border-b pb-2" :class="[textColorClass, borderColorClass]">
+        Appearance
+      </h2>
+      <div class="section-content flex flex-col gap-4">
+        <label for="theme" :class="labelClass">Theme</label>
+        <select
+          id="theme"
+          v-model="appearanceSettings.theme"
+          class="settings-select p-2 border-2 rounded-md w-full"
+          :class="inputClass"
+          @change="applyTheme"
+        >
           <option value="light">Light</option>
           <option value="dark">Dark</option>
         </select>
 
-        <button @click="applyTheme" class="btn apply-btn">Apply Theme</button>
+        <label for="language" :class="labelClass">Language</label>
+        <select
+          id="language"
+          v-model="appearanceSettings.language"
+          class="settings-select p-2 border-2 rounded-md w-full"
+          :class="inputClass"
+          @change="applyLanguage"
+        >
+          <option value="en">English</option>
+          <option value="zh">Bahasa Cina</option>
+          <option value="ms">Bahasa Melayu</option>
+        </select>
       </div>
     </div>
 
-    <div class="settings-section">
-      <h2 class="section-title">Notification Settings</h2>
-      <div class="section-content">
-        <label class="settings-label">
-          <input type="checkbox" v-model="notificationSettings.emailNotifications" />
+    <!-- Notification Settings -->
+    <div class="settings-section mb-8">
+      <h2 class="section-title text-2xl font-medium mb-4 border-b pb-2" :class="[textColorClass, borderColorClass]">
+        Notification Settings
+      </h2>
+      <div class="section-content flex flex-col gap-4">
+        <label class="settings-label flex items-center gap-2" :class="labelClass">
+          <input type="checkbox" v-model="notificationSettings.emailNotifications" class="form-checkbox" />
           Email Notifications
         </label>
-        <label class="settings-label">
-          <input type="checkbox" v-model="notificationSettings.smsNotifications" />
+
+        <label class="settings-label flex items-center gap-2" :class="labelClass">
+          <input type="checkbox" v-model="notificationSettings.smsNotifications" class="form-checkbox" />
           SMS Notifications
         </label>
 
-        <button @click="saveNotificationSettings" class="btn save-btn">Save Notifications</button>
+        <label class="settings-label flex items-center gap-2" :class="labelClass">
+          <input type="checkbox" v-model="notificationSettings.pushNotifications" class="form-checkbox" />
+          Push Notifications
+        </label>
+
+        <button
+          @click="saveNotificationSettings"
+          class="btn save-btn py-1 px-3 text-sm rounded-md w-32"
+          :class="buttonClass"
+        >
+          Save Notifications
+        </button>
+      </div>
+    </div>
+
+    <!-- Privacy Settings -->
+    <div class="settings-section">
+      <h2 class="section-title text-2xl font-medium mb-4 border-b pb-2" :class="[textColorClass, borderColorClass]">
+        Privacy Settings
+      </h2>
+      <div class="section-content flex flex-col gap-4">
+        <button
+          @click="viewHistory"
+          class="btn view-btn py-1 px-3 text-sm rounded-md w-32"
+          :class="buttonClass"
+        >
+          View History
+        </button>
+
+        <button
+          @click="clearHistory"
+          class="btn clear-btn py-1 px-3 text-sm rounded-md w-32 bg-red-600 hover:bg-red-700 text-white"
+        >
+          Clear History
+        </button>
       </div>
     </div>
   </div>
@@ -54,93 +153,72 @@ export default {
         username: 'JohnDoe',
         email: 'johndoe@example.com',
       },
+      password: {
+        oldPassword: '',
+        newPassword: '',
+      },
+      passwordError: '',
       appearanceSettings: {
         theme: 'light',
+        language: 'en',
       },
       notificationSettings: {
         emailNotifications: true,
         smsNotifications: false,
+        pushNotifications: true,
       },
     };
   },
+  computed: {
+    themeClass() {
+      return this.appearanceSettings.theme === 'dark' ? 'bg-black' : 'bg-gray-100';
+    },
+    textColorClass() {
+      return this.appearanceSettings.theme === 'dark' ? 'text-white' : 'text-black';
+    },
+    inputClass() {
+      return this.appearanceSettings.theme === 'dark' ? 'border-gray-700 bg-gray-800 text-white' : 'border-gray-300 bg-white text-black';
+    },
+    buttonClass() {
+      return this.appearanceSettings.theme === 'dark' ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-blue-600 text-white hover:bg-blue-700';
+    },
+    borderColorClass() {
+      return this.appearanceSettings.theme === 'dark' ? 'border-gray-700' : 'border-gray-300';
+    },
+    labelClass() {
+      return `${this.textColorClass} text-lg font-medium`;
+    },
+  },
   methods: {
-    saveAccountSettings() {
-      console.log('Saving account settings:', this.accountSettings);
-      alert('Account settings saved!');
+    changePassword() {
+      if (this.password.oldPassword !== 'correct_password') {
+        this.passwordError = 'The old password is incorrect. Please try again.';
+      } else {
+        this.passwordError = '';
+        alert('Password changed successfully!');
+      }
     },
     applyTheme() {
       console.log('Applying theme:', this.appearanceSettings.theme);
-      alert(`Theme set to ${this.appearanceSettings.theme}`);
+    },
+    applyLanguage() {
+      console.log('Applying language:', this.appearanceSettings.language);
+      alert(`Language changed to ${this.appearanceSettings.language}`);
     },
     saveNotificationSettings() {
-      console.log('Saving notification settings:', this.notificationSettings);
+      console.log('Notification settings saved:', this.notificationSettings);
       alert('Notification settings saved!');
+    },
+    viewHistory() {
+      console.log('Viewing history...');
+      alert('Displaying browsing history (dummy implementation).');
+    },
+    clearHistory() {
+      if (confirm('Are you sure you want to clear your history?')) {
+        console.log('History cleared');
+        alert('Your browsing history has been cleared.');
+      }
     },
   },
 };
 </script>
-
-<style scoped>
-.settings-container {
-  padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.settings-title {
-  font-size: 2rem;
-  margin-bottom: 20px;
-}
-
-.settings-section {
-  margin-bottom: 30px;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 5px;
-}
-
-.section-content {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.settings-label {
-  font-size: 1rem;
-  margin-bottom: 5px;
-}
-
-.settings-input,
-.settings-select {
-  padding: 8px;
-  border: 2px solid #ccc;
-  border-radius: 5px;
-  width: 100%;
-}
-
-.btn {
-  background-color: #007bff;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.btn:hover {
-  background-color: #0056b3;
-}
-
-.save-btn {
-  align-self: flex-start;
-}
-
-.apply-btn {
-  align-self: flex-start;
-}
-</style>
