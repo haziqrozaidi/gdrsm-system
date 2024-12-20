@@ -17,8 +17,8 @@ CREATE TABLE folder (
     date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT,
     parent_folder_id INT,
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (parent_folder_id) REFERENCES folder(folder_id)
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_folder_id) REFERENCES folder(folder_id) ON DELETE CASCADE
 );
 
 -- Create category table
@@ -43,9 +43,9 @@ CREATE TABLE resource (
     user_id INT,
     folder_id INT,
     category_id INT,
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (folder_id) REFERENCES folder(folder_id),
-    FOREIGN KEY (category_id) REFERENCES category(category_id)
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (folder_id) REFERENCES folder(folder_id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES category(category_id) ON DELETE CASCADE
 );
 
 -- Create user_group table
@@ -55,7 +55,7 @@ CREATE TABLE user_group (
     description TEXT,
     date_created DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT,
-    FOREIGN KEY (user_id) REFERENCES user(user_id)
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
 );
 
 -- Create group_members table
@@ -64,8 +64,8 @@ CREATE TABLE group_members (
     group_id INT,
     date_joined DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, group_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (group_id) REFERENCES user_group(group_id)
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES user_group(group_id) ON DELETE CASCADE
 );
 
 -- Create user_resource table
@@ -74,8 +74,8 @@ CREATE TABLE user_resource (
     resource_id INT,
     date_shared DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, resource_id),
-    FOREIGN KEY (user_id) REFERENCES user(user_id),
-    FOREIGN KEY (resource_id) REFERENCES resource(resource_id)
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (resource_id) REFERENCES resource(resource_id) ON DELETE CASCADE
 );
 
 -- Create group_resource table
@@ -84,6 +84,6 @@ CREATE TABLE group_resource (
     resource_id INT,
     date_shared DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (group_id, resource_id),
-    FOREIGN KEY (group_id) REFERENCES user_group(group_id),
-    FOREIGN KEY (resource_id) REFERENCES resource(resource_id)
+    FOREIGN KEY (group_id) REFERENCES user_group(group_id) ON DELETE CASCADE,
+    FOREIGN KEY (resource_id) REFERENCES resource(resource_id) ON DELETE CASCADE
 );
