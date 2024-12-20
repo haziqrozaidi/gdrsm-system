@@ -60,6 +60,32 @@ sub register ($c, $user, $password) {
     );
   }
 
+  # Create a default folder
+  my $folder_sth = eval {
+    my $prep = $dbh->prepare(
+      'INSERT INTO folder (name, description, user_id) 
+        SELECT ?, ?, user_id 
+        FROM user 
+        WHERE username = ?'
+    );
+    $prep->execute(
+      'My Folder', 
+      'A default folder to store and organize your resources', 
+      $user->{login_name}
+    );
+    $dbh->commit;
+    $prep;
+  };
+
+  if ($@) {
+    $dbh->rollback;
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Creating folder failed: ' . $@},
+      status => 500
+    );
+  }
+
   $dbh->disconnect;
 
   # Return success response
