@@ -80,7 +80,13 @@ sub getAllResources {
   # Prepare and execute insert
   my $sth = eval {
     my $prep = $dbh->prepare(
-      'SELECT * FROM resource WHERE user_id = ?'
+      'SELECT r.*,
+        f.name AS folder_name,
+        c.name AS category_name
+      FROM resource r
+      LEFT JOIN folder f ON r.folder_id = f.folder_id
+      LEFT JOIN category c ON r.category_id = c.category_id
+      WHERE r.user_id = ?'
     );
     $prep->execute($user_id);
     $prep;
@@ -225,6 +231,104 @@ sub addResource {
       message => 'Resource saved successfully',
     },
     status => 201
+  );
+}
+
+sub updateResource {
+  my $c = shift;
+
+  my $resource = $c->req->json;
+  my $resource_id = $c->stash('id');  # Get resource ID from URL
+
+  my $username = $c->session('login_name');
+  my $email = $c->session('email');
+
+  unless ($username) {
+    return $c->render(
+      json => {error => 'User not authenticated'},
+      status => 401
+    );
+  }
+
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Could not load database configuration'},
+      status => 500
+    );
+  }
+
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Database connection failed: ' . $@},
+      status => 500
+    );
+  }
+
+  # Prepare and execute update
+  my $sth = eval {
+    my $prep = $dbh->prepare(
+      'UPDATE resource
+        SET link = ?, name = ?, type = ?, description = ?,
+          session = ?, semester = ?, folder_id = ?, category_id = ?
+        WHERE resource_id = ? AND user_id = (SELECT user_id FROM user WHERE username = ?)'
+    );
+    $prep->execute(
+      $resource->{link},
+      $resource->{name},
+      $resource->{type},
+      $resource->{description},
+      $resource->{session},
+      $resource->{semester},
+      $resource->{folder},
+      $resource->{category},
+      $resource_id,
+      $username
+    );
+    $dbh->commit;
+    $prep;
+  };
+
+  if ($@) {
+    $dbh->rollback;
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Update failed: ' . $@},
+      status => 500
+    );
+  }
+
+  $dbh->disconnect;
+
+  # Check if any rows were updated
+  if ($sth->rows == 0) {
+    return $c->render(
+      json => {error => 'Resource not found or unauthorized'},
+      status => 404
+    );
+  }
+
+  # Return success response
+  $c->render(
+    json => {
+      message => 'Resource updated successfully',
+      resource_id => $resource_id
+    },
+    status => 200
   );
 }
 
