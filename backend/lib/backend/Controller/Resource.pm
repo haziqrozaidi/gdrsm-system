@@ -332,4 +332,93 @@ sub updateResource {
   );
 }
 
+sub deleteResource {
+  my $c = shift;
+
+  my $resource_id = $c->stash('id');  # Get resource ID from URL
+  my $username = $c->session('login_name');
+
+  unless ($username) {
+    return $c->render(
+      json => {error => 'User not authenticated'},
+      status => 401
+    );
+  }
+
+  unless ($resource_id) {
+    return $c->render(
+      json => {error => 'Missing resource ID'},
+      status => 400
+    );
+  }
+
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Could not load database configuration'},
+      status => 500
+    );
+  }
+
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Database connection failed: ' . $@},
+      status => 500
+    );
+  }
+
+  # Prepare and execute delete
+  my $sth = eval {
+    my $prep = $dbh->prepare(
+      'DELETE FROM resource
+        WHERE resource_id = ? AND user_id = (SELECT user_id FROM user WHERE username = ?)'
+    );
+    $prep->execute($resource_id, $username);
+    $dbh->commit;
+    $prep;
+  };
+
+  if ($@) {
+    $dbh->rollback;
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Delete failed: ' . $@},
+      status => 500
+    );
+  }
+
+    $dbh->disconnect;
+
+  # Check if any rows were deleted
+  if ($sth->rows == 0) {
+    return $c->render(
+      json => {error => 'Resource not found or unauthorized'},
+      status => 404
+    );
+  }
+
+  # Return success response
+  $c->render(
+    json => {
+      message => 'Resource deleted successfully',
+      resource_id => $resource_id
+    },
+    status => 200
+  );
+}
+
 1;

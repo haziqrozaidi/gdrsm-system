@@ -32,7 +32,7 @@ sub startup ($self) {
   # Handle preflight requests
   $r->options('*')->to(cb => sub ($c) {
     $c->res->headers->header('Access-Control-Allow-Origin' => 'http://localhost:5173');
-    $c->res->headers->header('Access-Control-Allow-Methods' => 'GET, POST, OPTIONS, PUT');
+    $c->res->headers->header('Access-Control-Allow-Methods' => 'GET, POST, OPTIONS, PUT, DELETE');
     $c->res->headers->header('Access-Control-Allow-Headers' => 'Content-Type, Authorization');
     $c->res->headers->header('Access-Control-Allow-Credentials' => 'true');
     $c->res->headers->header('Access-Control-Max-Age' => '86400');
@@ -70,6 +70,7 @@ sub startup ($self) {
   $authorized->get('/api/resources')->to('Resource#getAllResources');
   $authorized->post('/api/resources')->to('Resource#addResource');
   $authorized->put('/api/resources/:id')->to('Resource#updateResource');
+  $authorized->delete('/api/resources/:id')->to('Resource#deleteResource');
   $authorized->get('/api/categories')->to('Category#getAllCategories');
   $authorized->get('/api/folders')->to('Folder#getAllFolders');
 }
