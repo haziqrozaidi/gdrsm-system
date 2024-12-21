@@ -24,6 +24,7 @@
     const categories = ref([]);
     const folders = ref([]);
     const user = ref({})
+    const selectedResource = ref(null)
 
     const categoryOptions = computed(() => {
         return categories.value.map(category => ({
@@ -53,6 +54,39 @@
     })
 
     const showAddResourceDialog = ref(false);
+    const showEditResourceDialog = ref(false)
+
+    const openEditResourceDialog = (resource) => {
+        selectedResource.value = { ...resource }
+        resourceData.value = {
+            name: resource.name,
+            type: resource.type,
+            description: resource.description,
+            owner: user.value.email,
+            link: resource.link,
+            session: resource.session,
+            semester: resource.semester,
+            folder: resource.folder_id,
+            category: resource.category_id
+        }
+        showEditResourceDialog.value = true
+    }
+
+    const closeEditResourceDialog = () => {
+        resourceData.value = {
+            name: '',
+            type: '',
+            description: '',
+            owner: computed(() => user.value.email),
+            link: '',
+            session: '',
+            semester: '',
+            folder: '',
+            category: ''
+        }
+        selectedResource.value = null
+        showEditResourceDialog.value = false
+    }
 
     const files = ref([
         {
@@ -235,6 +269,47 @@
         }
     }
 
+    const updateResource = async () => {
+        if (!selectedResource.value) return
+
+        const url = `http://127.0.0.1:3000/api/resources/${selectedResource.value.resource_id}`
+        try {
+            const response = await fetch(url, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(resourceData.value)
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json()
+                throw new Error(errorData.error || 'Update failed')
+            }
+
+            await fetchResources()
+
+            // Reset form and close dialog
+            resourceData.value = {
+                name: '',
+                type: '',
+                description: '',
+                link: '',
+                session: '',
+                semester: '',
+                folder: '',
+                category: ''
+            }
+
+            showEditResourceDialog.value = false
+            selectedResource.value = null
+
+        } catch (error) {
+            console.error(error.message)
+        }
+    }
+
     const fetchResources = async () => {
         const url = 'http://127.0.0.1:3000/api/resources';
         try {
@@ -307,7 +382,7 @@
 
         // Retrieve user from sessionStorage
         const userString = sessionStorage.getItem('user')
-        
+
         if (userString) {
             try {
                 // Parse the JSON string
@@ -348,7 +423,7 @@
                                 <Button
                                     icon="pi pi-pencil"
                                     class="p-button-info p-button-sm"
-                                    @click="openEditModal(data)"
+                                    @click="openEditResourceDialog(data)"
                                 />
                                 <Button
                                     icon="pi pi-trash"
@@ -420,6 +495,7 @@
                     </div>
                 </Dialog>
 
+                <!-- Add Resource Modal -->
                 <Dialog v-model:visible="showAddResourceDialog" modal header="Add New Resource" :style="{ width: '30rem' }">
                     <div class="flex items-center gap-4 mb-4">
                         <label for="name" class="font-semibold w-24">Name</label>
@@ -503,6 +579,93 @@
                     <div class="flex justify-end gap-2">
                         <Button type="button" label="Cancel" severity="secondary" @click="showAddResourceDialog = false"></Button>
                         <Button type="button" label="Save" @click="saveResource"></Button>
+                    </div>
+                </Dialog>
+
+                <!-- Edit Resource Modal -->
+                <Dialog v-model:visible="showEditResourceDialog" modal header="Edit Resource" :style="{ width: '30rem' }" @hide="closeEditResourceDialog">
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="name" class="font-semibold w-24">Name</label>
+                        <InputText id="name" v-model="resourceData.name" class="flex-auto" autocomplete="off" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="type" class="font-semibold w-24">Type</label>
+                        <Dropdown
+                            id="type"
+                            v-model="resourceData.type"
+                            :options="['File', 'Folder']"
+                            class="flex-auto"
+                            placeholder="Select Type"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="description" class="font-semibold w-24">Description</label>
+                        <Textarea id="description" v-model="resourceData.description" class="flex-auto" rows="3" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="owner" class="font-semibold w-24">Owner</label>
+                        <InputText id="owner" v-model="resourceData.owner" type="email" class="flex-auto" autocomplete="off" disabled />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="link" class="font-semibold w-24">Link</label>
+                        <InputText id="link" v-model="resourceData.link" class="flex-auto" autocomplete="off" />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="session" class="font-semibold w-24">Session</label>
+                        <Dropdown
+                            id="session"
+                            v-model="resourceData.session"
+                            :options="['2023/2024', '2024/2025', '2025/2026']"
+                            class="flex-auto"
+                            placeholder="Select Session"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="semester" class="font-semibold w-24">Semester</label>
+                        <Dropdown
+                            id="semester"
+                            v-model="resourceData.semester"
+                            :options="['1', '2', '3']"
+                            class="flex-auto"
+                            placeholder="Select Semester"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="folder" class="font-semibold w-24">Folder</label>
+                        <Dropdown
+                            id="folder"
+                            v-model="resourceData.folder"
+                            :options="folderOptions"
+                            optionLabel="name"
+                            optionValue="folder_id"
+                            class="flex-auto"
+                            placeholder="Select Folder"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-8">
+                        <label for="category" class="font-semibold w-24">Category</label>
+                        <Dropdown
+                            id="category"
+                            v-model="resourceData.category"
+                            :options="categoryOptions"
+                            optionLabel="name"
+                            optionValue="category_id"
+                            class="flex-auto"
+                            placeholder="Select Category"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button type="button" label="Cancel" severity="secondary" @click="showEditResourceDialog = false"></Button>
+                        <Button type="button" label="Update" @click="updateResource"></Button>
                     </div>
                 </Dialog>
             </div>
