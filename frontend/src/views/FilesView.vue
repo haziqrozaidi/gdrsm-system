@@ -20,11 +20,15 @@
         { name: 'Other', code: 'OTHER' }
     ])
 
-    const resources = ref([]);
-    const categories = ref([]);
-    const folders = ref([]);
+    const resources = ref([])
+    const categories = ref([])
+    const folders = ref([])
     const user = ref({})
-    const selectedResource = ref(null)
+    const resourceToUpdate = ref(null)
+    const resourceToDelete = ref(null)
+    const showAddResourceDialog = ref(false)
+    const showEditResourceDialog = ref(false)
+    const showDeleteResourceDialog = ref(false)
 
     const categoryOptions = computed(() => {
         return categories.value.map(category => ({
@@ -40,7 +44,6 @@
         }))
     })
 
-
     const resourceData = ref({
         name: '',
         type: '',
@@ -53,11 +56,8 @@
         category: ''
     })
 
-    const showAddResourceDialog = ref(false);
-    const showEditResourceDialog = ref(false)
-
     const openEditResourceDialog = (resource) => {
-        selectedResource.value = { ...resource }
+        resourceToUpdate.value = { ...resource }
         resourceData.value = {
             name: resource.name,
             type: resource.type,
@@ -72,6 +72,11 @@
         showEditResourceDialog.value = true
     }
 
+    const openDeleteResourceDialog = (resource) => {
+        resourceToDelete.value = resource
+        showDeleteResourceDialog.value = true
+    }
+
     const closeEditResourceDialog = () => {
         resourceData.value = {
             name: '',
@@ -84,7 +89,7 @@
             folder: '',
             category: ''
         }
-        selectedResource.value = null
+        resourceToUpdate.value = null
         showEditResourceDialog.value = false
     }
 
@@ -270,9 +275,9 @@
     }
 
     const updateResource = async () => {
-        if (!selectedResource.value) return
+        if (!resourceToUpdate.value) return
 
-        const url = `http://127.0.0.1:3000/api/resources/${selectedResource.value.resource_id}`
+        const url = `http://127.0.0.1:3000/api/resources/${resourceToUpdate.value.resource_id}`
         try {
             const response = await fetch(url, {
                 method: 'PUT',
@@ -303,12 +308,38 @@
             }
 
             showEditResourceDialog.value = false
-            selectedResource.value = null
+            resourceToUpdate.value = null
 
         } catch (error) {
             console.error(error.message)
         }
     }
+
+    const deleteResource = async () => {
+        if (!resourceToDelete.value) return
+
+        const url = `http://127.0.0.1:3000/api/resources/${resourceToDelete.value.resource_id}`
+        try {
+            const response = await fetch(url, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`)
+            }
+
+            await fetchResources()
+            showDeleteResourceDialog.value = false
+            resourceToDelete.value = null
+        } catch (error) {
+            console.error(error.message)
+        }
+    }
+
 
     const fetchResources = async () => {
         const url = 'http://127.0.0.1:3000/api/resources';
@@ -428,7 +459,7 @@
                                 <Button
                                     icon="pi pi-trash"
                                     class="p-button-danger p-button-sm"
-                                    @click="deleteFile(data)"
+                                    @click="openDeleteResourceDialog(data)"
                                 />
                             </div>
                         </template>
@@ -667,6 +698,35 @@
                         <Button type="button" label="Cancel" severity="secondary" @click="showEditResourceDialog = false"></Button>
                         <Button type="button" label="Update" @click="updateResource"></Button>
                     </div>
+                </Dialog>
+
+                <!-- Delete Confirmation Dialog -->
+                <Dialog
+                    v-model:visible="showDeleteResourceDialog"
+                    header="Confirm Delete"
+                    :style="{ width: '30rem' }"
+                    modal
+                >
+                    <div class="flex items-center">
+                        <span class="text-gray-700">Are you sure you want to delete this resource?</span>
+                    </div>
+
+                    <template #footer>
+                        <div class="flex justify-end space-x-3">
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                @click="showDeleteResourceDialog = false"
+                                class="p-button-outlined p-button-secondary"
+                            />
+                            <Button
+                                label="Delete"
+                                icon="pi pi-trash"
+                                @click="deleteResource"
+                                class="p-button-danger"
+                            />
+                        </div>
+                    </template>
                 </Dialog>
             </div>
         </div>
