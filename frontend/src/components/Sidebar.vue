@@ -47,7 +47,8 @@
                 },
                 {
                     label: 'Sharing',
-                    icon: 'pi pi-users'
+                    icon: 'pi pi-users',
+                    route: '/sharing'
                 }
             ]
         },

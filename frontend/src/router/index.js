@@ -6,6 +6,7 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import FilesView from '../views/FilesView.vue'
 import FoldersView from '../views/FoldersView.vue'
+import SharingView from '../views/SharingView.vue'
 import SearchView from '../views/SearchView.vue'
 import SettingView from '../views/SettingView.vue'
 
@@ -47,6 +48,12 @@ const routes = [
     path: '/search',
     name: 'search',
     component: SearchView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sharing',
+    name: 'sharing',
+    component: SharingView,
     meta: { requiresAuth: true }
   },
   {
