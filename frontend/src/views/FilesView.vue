@@ -10,16 +10,21 @@
     import Dropdown from 'primevue/dropdown'
     import Textarea from 'primevue/textarea';
     import Sidebar from '../components/Sidebar.vue'
+    import MultiSelect from 'primevue/multiselect'
 
     const resources = ref([])
     const categories = ref([])
     const folders = ref([])
     const user = ref({})
+    const users = ref([])
+    const selectedUsers = ref([])
     const resourceToUpdate = ref(null)
     const resourceToDelete = ref(null)
+    const resourceToShare = ref(null)
     const showAddResourceDialog = ref(false)
     const showUpdateResourceDialog = ref(false)
     const showDeleteResourceDialog = ref(false)
+    const showShareResourceDialog = ref(false)
 
     const categoryOptions = computed(() => {
         return categories.value.map(category => ({
@@ -66,6 +71,12 @@
     const openDeleteResourceDialog = (resource) => {
         resourceToDelete.value = resource
         showDeleteResourceDialog.value = true
+    }
+
+    const openShareResourceDialog = (resource) => {
+        resourceToShare.value = resource;
+        selectedUsers.value = []; // Reset selected users
+        showShareResourceDialog.value = true;
     }
 
     const closeEditResourceDialog = () => {
@@ -190,6 +201,55 @@
         }
     }
 
+    const shareResource = async () => {
+        if (!resourceToShare.value) {
+            console.error('No resource selected');
+            return;
+        }
+
+        // Log for debugging
+        console.log('Selected User IDs:', selectedUsers.value);
+        console.log('All Users:', users.value);
+
+        // The selected users are already user IDs, so no need for mapping
+        const validUserIds = selectedUsers.value.filter(id => 
+            id !== null && id !== undefined
+        );
+
+        if (validUserIds.length === 0) {
+            console.error('No valid users selected');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources/share', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resource_id: resourceToShare.value.resource_id,
+                    user_ids: validUserIds
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Sharing failed');
+            }
+
+            // Success handling
+            console.log('Resource shared successfully');
+            showShareResourceDialog.value = false;
+            resourceToShare.value = null;
+            selectedUsers.value = [];
+
+        } catch (error) {
+            console.error('Share resource error:', error.message);
+        }
+    }
+
     const fetchResources = async () => {
         const url = 'http://127.0.0.1:3000/api/resources';
         try {
@@ -255,10 +315,32 @@
         }
     }
 
+    const fetchUsers = async () => {
+        const url = 'http://127.0.0.1:3000/api/users';
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            users.value = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch users:', error.message);
+        }
+    }
+
     onMounted(() => {
         fetchResources();
         fetchCategories();
         fetchFolders();
+        fetchUsers();
 
         // Retrieve user from sessionStorage
         const userString = sessionStorage.getItem('user')
@@ -309,6 +391,11 @@
                                     icon="pi pi-trash"
                                     class="p-button-danger p-button-sm"
                                     @click="openDeleteResourceDialog(data)"
+                                />
+                                <Button
+                                    icon="pi pi-share-alt"
+                                    class="p-button-success p-button-sm"
+                                    @click="openShareResourceDialog(data)"
                                 />
                             </div>
                         </template>
@@ -516,6 +603,51 @@
                             />
                         </div>
                     </template>
+                </Dialog>
+
+                <!-- Share Resource Dialog -->
+                <Dialog 
+                    v-model:visible="showShareResourceDialog" 
+                    modal 
+                    header="Share Resource" 
+                    :style="{ width: '30rem' }"
+                >
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold">
+                            Share: {{ resourceToShare ? resourceToShare.name : 'Resource' }}
+                        </h3>
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="users" class="font-semibold w-24">Select Users</label>
+                        <MultiSelect 
+                            id="users"
+                            v-model="selectedUsers" 
+                            :options="users"
+                            optionLabel="full_name"
+                            optionValue="user_id"
+                            placeholder="Select Users to Share With"
+                            display="chip"
+                            class="flex-auto"
+                            filter
+                        />
+
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button 
+                            type="button" 
+                            label="Cancel" 
+                            severity="secondary" 
+                            @click="showShareResourceDialog = false"
+                        />
+                        <Button 
+                            type="button" 
+                            label="Share" 
+                            @click="shareResource"
+                            :disabled="selectedUsers.length === 0"
+                        />
+                    </div>
                 </Dialog>
             </div>
         </div>
