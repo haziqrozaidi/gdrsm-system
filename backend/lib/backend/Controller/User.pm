@@ -98,4 +98,47 @@ sub register ($c, $user, $password) {
   );
 }
 
+sub getAllUsers {
+  my $c = shift;
+
+  # Similar database connection logic as in other methods
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Could not load database configuration'},
+      status => 500
+    );
+  }
+
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Database connection failed: ' . $@},
+      status => 500
+    );
+  }
+
+  my $sth = $dbh->prepare(
+    'SELECT user_id, username, full_name, email FROM user'
+  );
+  $sth->execute();
+
+  my $users = $sth->fetchall_arrayref({});
+
+  $c->render(json => $users);
+}
+
 1;
