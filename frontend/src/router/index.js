@@ -9,6 +9,7 @@ import FoldersView from '../views/FoldersView.vue'
 import SharingView from '../views/SharingView.vue'
 import SearchView from '../views/SearchView.vue'
 import SettingView from '../views/SettingView.vue'
+import CategoriesView from '../views/CategoriesView.vue'
 
 const routes = [
   {
@@ -48,6 +49,12 @@ const routes = [
     path: '/search',
     name: 'search',
     component: SearchView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/categories',
+    name: 'categories',
+    component: CategoriesView,
     meta: { requiresAuth: true }
   },
   {

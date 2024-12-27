@@ -46,6 +46,11 @@
                     route: '/folders'
                 },
                 {
+                    label: 'Categories',
+                    icon: 'pi pi-tag',
+                    route: '/categories'
+                },
+                {
                     label: 'Sharing',
                     icon: 'pi pi-users',
                     route: '/sharing'
