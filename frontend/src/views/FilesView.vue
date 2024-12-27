@@ -330,7 +330,9 @@
                 throw new Error(`Response status: ${response.status}`);
             }
 
-            users.value = await response.json();
+            const allUsers = await response.json();
+            
+            users.value = allUsers.filter(u => u.email !== user.value.email);
         } catch (error) {
             console.error('Failed to fetch users:', error.message);
         }
@@ -610,7 +612,7 @@
                     v-model:visible="showShareResourceDialog" 
                     modal 
                     header="Share Resource" 
-                    :style="{ width: '30rem' }"
+                    :style="{ width: '35rem' }"
                 >
                     <div class="mb-4">
                         <h3 class="text-lg font-semibold">
@@ -624,7 +626,7 @@
                             id="users"
                             v-model="selectedUsers" 
                             :options="users"
-                            optionLabel="full_name"
+                            optionLabel="email"
                             optionValue="user_id"
                             placeholder="Select Users to Share With"
                             display="chip"
