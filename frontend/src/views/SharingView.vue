@@ -3,10 +3,18 @@
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
+    import Dialog from 'primevue/dialog'
     import Sidebar from '../components/Sidebar.vue'
 
     const sharedResources = ref([])
     const loading = ref(false)
+    const resourceToDelete = ref(null)
+    const showDeleteResourceDialog = ref(false)
+
+    const openDeleteResourceDialog = (resource) => {
+        resourceToDelete.value = resource
+        showDeleteResourceDialog.value = true
+    }
 
     const fetchSharedResources = async () => {
         loading.value = true
@@ -28,6 +36,33 @@
             console.error('Failed to fetch shared resources:', error.message);
         } finally {
             loading.value = false
+        }
+    }
+
+    const deleteSharedResource = async () => {
+        if (!resourceToDelete.value) return
+
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources/shared/delete', {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resource_id: resourceToDelete.value.resource_id
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`)
+            }
+
+            await fetchSharedResources()
+            showDeleteResourceDialog.value = false
+            resourceToDelete.value = null
+        } catch (error) {
+            console.error('Failed to delete shared resource:', error.message)
         }
     }
 
@@ -68,6 +103,35 @@
                         </template>
                     </Column>
                 </DataTable>
+
+                <!-- Delete Shared Resource Dialog -->
+                <Dialog
+                    v-model:visible="showDeleteResourceDialog"
+                    header="Confirm Delete"
+                    :style="{ width: '30rem' }"
+                    modal
+                >
+                    <div class="flex items-center">
+                        <span class="text-gray-700">Are you sure you want to remove this shared resource?</span>
+                    </div>
+
+                    <template #footer>
+                        <div class="flex justify-end space-x-3">
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                @click="showDeleteResourceDialog = false"
+                                class="p-button-outlined p-button-secondary"
+                            />
+                            <Button
+                                label="Delete"
+                                icon="pi pi-trash"
+                                @click="deleteSharedResource"
+                                class="p-button-danger"
+                            />
+                        </div>
+                    </template>
+                </Dialog>
             </div>
         </div>
     </div>

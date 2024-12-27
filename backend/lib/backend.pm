@@ -74,6 +74,7 @@ sub startup ($self) {
   $authorized->post('/api/resources/share')->to('Resource#shareResource');
 
   $authorized->get('/api/resources/shared')->to('SharedResource#getAllSharedResources');
+  $authorized->delete('/api/resources/shared/delete')->to('SharedResource#deleteSharedResource');
 
   $authorized->get('/api/categories')->to('Category#getAllCategories');
   $authorized->get('/api/folders')->to('Folder#getAllFolders');
