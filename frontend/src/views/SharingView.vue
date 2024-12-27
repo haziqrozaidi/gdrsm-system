@@ -1,5 +1,5 @@
 <script setup>
-    import { ref } from 'vue'
+    import { ref, onMounted } from 'vue'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
@@ -7,6 +7,33 @@
 
     const sharedResources = ref([])
     const loading = ref(false)
+
+    const fetchSharedResources = async () => {
+        loading.value = true
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources/shared', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            sharedResources.value = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch shared resources:', error.message);
+        } finally {
+            loading.value = false
+        }
+    }
+
+    onMounted(() => {
+        fetchSharedResources()
+    })
 </script>
 
 <template>
@@ -18,8 +45,8 @@
                     <h2 class="text-2xl font-bold">Shared with me</h2>
                 </div>
 
-                <DataTable 
-                    :value="sharedResources" 
+                <DataTable
+                    :value="sharedResources"
                     :loading="loading"
                     emptyMessage="No shared resources"
                     stripedRows
