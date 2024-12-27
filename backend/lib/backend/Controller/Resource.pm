@@ -421,4 +421,100 @@ sub deleteResource {
   );
 }
 
+sub shareResource {
+  my $c = shift;
+
+  my $data = $c->req->json;
+  my $resource_id = $data->{resource_id};
+  my @user_ids = @{$data->{user_ids}};
+
+  # Get current user
+  my $username = $c->session('login_name');
+
+  unless ($username) {
+    return $c->render(
+      json => {error => 'User not authenticated'},
+      status => 401
+    );
+  }
+
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Could not load database configuration'},
+      status => 500
+    );
+  }
+
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+
+  if ($@) {
+    return $c->render(
+      json => {error => 'Database connection failed: ' . $@},
+      status => 500
+    );
+  }
+
+  # Verify resource ownership
+  my $check_ownership_sth = $dbh->prepare(
+    'SELECT 1 FROM resource r 
+      JOIN user u ON r.user_id = u.user_id 
+      WHERE r.resource_id = ? AND u.username = ?'
+  );
+  $check_ownership_sth->execute($resource_id, $username);
+
+  unless ($check_ownership_sth->fetchrow_array) {
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Unauthorized to share this resource'},
+      status => 403
+    );
+  }
+
+  # Prepare to insert shared resources
+  my $insert_sth = $dbh->prepare(
+    'INSERT INTO user_resource (user_id, resource_id) VALUES (?, ?)'
+  );
+
+  # Share resource with selected users
+  eval {
+    foreach my $user_id (@user_ids) {
+      $insert_sth->execute($user_id, $resource_id);
+    }
+    $dbh->commit;
+  };
+
+  if ($@) {
+    $dbh->rollback;
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Failed to share resource: ' . $@},
+      status => 500
+    );
+  }
+
+  $dbh->disconnect;
+
+  # Return success response
+  $c->render(
+    json => {
+      message => 'Resource shared successfully',
+      shared_with_count => scalar @user_ids
+    },
+    status => 200
+  );
+}
+
 1;

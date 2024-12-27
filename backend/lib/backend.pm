@@ -71,8 +71,10 @@ sub startup ($self) {
   $authorized->post('/api/resources')->to('Resource#addResource');
   $authorized->put('/api/resources/:id')->to('Resource#updateResource');
   $authorized->delete('/api/resources/:id')->to('Resource#deleteResource');
+  $authorized->post('/api/resources/share')->to('Resource#shareResource');
   $authorized->get('/api/categories')->to('Category#getAllCategories');
   $authorized->get('/api/folders')->to('Folder#getAllFolders');
+  $authorized->get('/api/users')->to('User#getAllUsers');
 }
 
 1;
