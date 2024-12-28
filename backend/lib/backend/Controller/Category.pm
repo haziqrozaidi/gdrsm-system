@@ -334,4 +334,145 @@ sub updateCategory {
     );
 }
 
+sub deleteCategory {
+    my $c = shift;
+
+    # Get category ID from URL parameter
+    my $category_id = $c->stash('id');
+
+    # Validate input
+    unless ($category_id) {
+        return $c->render(
+            json => {error => 'Category ID is required'},
+            status => 400
+        );
+    }
+
+    # Check user authentication
+    my $username = $c->session('login_name');
+
+    unless ($username) {
+        return $c->render(
+            json => {error => 'User not authenticated'},
+            status => 401
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Check if category exists
+    my $check_exist_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT 1 FROM category WHERE category_id = ?'
+        );
+        $prep->execute($category_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Category existence check failed: ' . $@},
+            status => 500
+        );
+    }
+
+    unless ($check_exist_sth->fetchrow_array) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Category not found'},
+            status => 404
+        );
+    }
+
+    # Check if category is used in any resources
+    my $check_usage_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT COUNT(*) FROM resource WHERE category_id = ?'
+        );
+        $prep->execute($category_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Category usage check failed: ' . $@},
+            status => 500
+        );
+    }
+
+    my ($resource_count) = $check_usage_sth->fetchrow_array;
+
+    if ($resource_count > 0) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {
+                error => "Cannot delete category. It is used by $resource_count resource(s).",
+                resource_count => $resource_count
+            },
+            status => 409
+        );
+    }
+
+    # Prepare delete statement
+    my $sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM category WHERE category_id = ?'
+        );
+        $prep->execute($category_id);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Deleting category failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Category deleted successfully',
+            category_id => $category_id
+        },
+        status => 200
+    );
+}
+
 1;

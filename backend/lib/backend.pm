@@ -79,6 +79,7 @@ sub startup ($self) {
   $authorized->get('/api/categories')->to('Category#getAllCategories');
   $authorized->post('/api/categories')->to('Category#addCategory');
   $authorized->put('/api/categories/:id')->to('Category#updateCategory');
+  $authorized->delete('/api/categories/:id')->to('Category#deleteCategory');
 
   $authorized->get('/api/folders')->to('Folder#getAllFolders');
   $authorized->get('/api/users')->to('User#getAllUsers');

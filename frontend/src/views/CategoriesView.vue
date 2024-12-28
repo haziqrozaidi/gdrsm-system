@@ -14,7 +14,9 @@
     const categories = ref([])
     const showAddCategoryDialog = ref(false)
     const showUpdateCategoryDialog = ref(false)
+    const showDeleteCategoryDialog = ref(false)
     const categoryToUpdate = ref(null)
+    const categoryToDelete = ref(null)
 
     const category = ref({
         name: '',
@@ -28,6 +30,20 @@
             description: cat.description
         }
         showUpdateCategoryDialog.value = true
+    }
+
+    const openDeleteCategoryDialog = (cat) => {
+        categoryToDelete.value = cat
+        showDeleteCategoryDialog.value = true
+    }
+
+    const closeUpdateCategoryDialog = () => {
+        category.value = {
+            name: '',
+            description: ''
+        }
+        categoryToUpdate.value = null
+        showUpdateCategoryDialog.value = false
     }
 
     const addCategory = async () => {
@@ -75,6 +91,41 @@
                 severity: 'success',
                 summary: 'Success',
                 detail: 'Category updated successfully',
+                life: 3000
+            })
+        } catch (error) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
+        }
+    }
+
+    const deleteCategory = async () => {
+        try {
+            if (!categoryToDelete.value) return
+
+            const response = await fetch(`http://127.0.0.1:3000/api/categories/${categoryToDelete.value.category_id}`, {
+                method: 'DELETE',
+                credentials: 'include'
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error)
+            }
+
+            await fetchCategories()
+            showDeleteCategoryDialog.value = false
+            categoryToDelete.value = null
+
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category deleted successfully',
                 life: 3000
             })
         } catch (error) {
@@ -139,6 +190,7 @@
                                 <Button
                                     icon="pi pi-trash"
                                     class="p-button-danger p-button-sm"
+                                    @click="openDeleteCategoryDialog(data)"
                                 />
                             </div>
                         </template>
@@ -193,6 +245,7 @@
                     modal
                     header="Update Category"
                     :style="{ width: '30rem' }"
+                    @hide="closeUpdateCategoryDialog"
                 >
                     <div class="flex flex-col gap-4">
                         <div>
@@ -230,6 +283,35 @@
                             />
                         </div>
                     </div>
+                </Dialog>
+
+                <!-- Delete Category Modal -->
+                <Dialog
+                    v-model:visible="showDeleteCategoryDialog"
+                    header="Confirm Delete"
+                    :style="{ width: '30rem' }"
+                    modal
+                >
+                    <div class="flex items-center">
+                        <span class="text-gray-700">Are you sure you want to delete this category?</span>
+                    </div>
+
+                    <template #footer>
+                        <div class="flex justify-end space-x-3">
+                            <Button
+                                label="Cancel"
+                                icon="pi pi-times"
+                                @click="showDeleteCategoryDialog = false"
+                                class="p-button-outlined p-button-secondary"
+                            />
+                            <Button
+                                label="Delete"
+                                icon="pi pi-trash"
+                                @click="deleteCategory"
+                                class="p-button-danger"
+                            />
+                        </div>
+                    </template>
                 </Dialog>
             </div>
         </div>
