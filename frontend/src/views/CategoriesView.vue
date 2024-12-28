@@ -57,15 +57,29 @@
                 body: JSON.stringify(category.value)
             })
 
+            const result = await response.json()
+
             if (!response.ok) {
-                throw new Error('Failed to add category')
+                throw new Error(result.error)
             }
 
             await fetchCategories()
             showAddCategoryDialog.value = false
             category.value = { name: '', description: '' }
+
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category added successfully',
+                life: 3000
+            })
         } catch (error) {
-            console.error('Error adding category:', error)
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
         }
     }
 
