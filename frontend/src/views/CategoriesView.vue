@@ -1,5 +1,6 @@
 <script setup>
     import { ref, onMounted } from 'vue'
+    import { useToast } from 'primevue/usetoast'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
@@ -8,13 +9,26 @@
     import Textarea from 'primevue/textarea'
     import Sidebar from '../components/Sidebar.vue'
 
+    const toast = useToast()
+
     const categories = ref([])
     const showAddCategoryDialog = ref(false)
+    const showUpdateCategoryDialog = ref(false)
+    const categoryToUpdate = ref(null)
 
     const category = ref({
         name: '',
         description: ''
     })
+
+    const openUpdateCategoryDialog = (cat) => {
+        categoryToUpdate.value = cat
+        category.value = {
+            name: cat.name,
+            description: cat.description
+        }
+        showUpdateCategoryDialog.value = true
+    }
 
     const addCategory = async () => {
         try {
@@ -36,6 +50,40 @@
             category.value = { name: '', description: '' }
         } catch (error) {
             console.error('Error adding category:', error)
+        }
+    }
+
+    const updateCategory = async () => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/categories/${categoryToUpdate.value.category_id}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(category.value)
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to update category')
+            }
+
+            await fetchCategories()
+            showUpdateCategoryDialog.value = false
+            category.value = { name: '', description: '' }
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Category updated successfully',
+                life: 3000
+            })
+        } catch (error) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
         }
     }
 
@@ -86,6 +134,7 @@
                                 <Button
                                     icon="pi pi-pencil"
                                     class="p-button-info p-button-sm"
+                                    @click="openUpdateCategoryDialog(data)"
                                 />
                                 <Button
                                     icon="pi pi-trash"
@@ -96,6 +145,7 @@
                     </Column>
                 </DataTable>
 
+                <!-- Add Category Modal -->
                 <Dialog
                     v-model:visible="showAddCategoryDialog"
                     modal
@@ -134,6 +184,51 @@
                             label="Save"
                             @click="addCategory"
                         />
+                    </div>
+                </Dialog>
+
+                <!-- Update Category Modal -->
+                <Dialog
+                    v-model:visible="showUpdateCategoryDialog"
+                    modal
+                    header="Update Category"
+                    :style="{ width: '30rem' }"
+                >
+                    <div class="flex flex-col gap-4">
+                        <div>
+                            <label for="updateName" class="block mb-2">Name</label>
+                            <InputText
+                                id="updateName"
+                                v-model="category.name"
+                                class="w-full"
+                                placeholder="Enter category name"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="updateDescription" class="block mb-2">Description</label>
+                            <Textarea
+                                id="updateDescription"
+                                v-model="category.description"
+                                class="w-full"
+                                rows="3"
+                                placeholder="Enter category description"
+                            />
+                        </div>
+
+                        <div class="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                label="Cancel"
+                                severity="secondary"
+                                @click="showUpdateCategoryDialog = false"
+                            />
+                            <Button
+                                type="button"
+                                label="Update"
+                                @click="updateCategory"
+                            />
+                        </div>
                     </div>
                 </Dialog>
             </div>
