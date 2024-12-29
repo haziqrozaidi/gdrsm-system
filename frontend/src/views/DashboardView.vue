@@ -4,12 +4,14 @@ import Button from "primevue/button";
 import Card from "primevue/card";
 import Sidebar from "../components/Sidebar.vue";
 
-// State to store username
+// State to store username and statistic
 const fullName = ref('');
+const totalSharedResources = ref(0);
+const userUploadedResources = ref(0);
 
 // Function to fetch the user object from sessionStorage
 const fetchFullNameFromSession = () => {
-    const storedSession = sessionStorage.getItem('utmwebfc_session');
+    const storedSession = sessionStorage.getItem('user');
     try {
         // Parse the JSON object if it exists
         const userSession = storedSession ? JSON.parse(storedSession) : null;
@@ -19,11 +21,35 @@ const fetchFullNameFromSession = () => {
         fullName.value = 'Guest'; // Fallback in case of parsing error
     }
 };
+// Function to fetch resource statistics
+const fetchResourceStatistics = async () => {
+    const url = 'http://127.0.0.1:3000/api/resource/statistics';
 
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Response status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        totalSharedResources.value = data.total_shared_resources || 0;
+        userUploadedResources.value = data.user_uploaded_resources || 0;
+    } catch (error) {
+        console.error('Error fetching resource statistics:', error.message);
+    }
+};
 // Fetch the full name when the component is mounted
 onMounted(() => {
-    console.log('Dashboard mounted, fetching username...');
+    console.log('Dashboard mounted, fetching username and statistic...');
     fetchFullNameFromSession();
+    fetchResourceStatistics();
     console.log('Username set to:', fullName.value); // Debug log
 });
 </script>
@@ -46,7 +72,7 @@ onMounted(() => {
           <Card class="shadow-md">
             <template #title>Total Shared Resources</template>
             <template #content>
-              <div class="text-3xl font-bold text-blue-600">42</div>
+              <div class="text-3xl font-bold text-blue-600">{{ totalSharedResources }}</div>
               <div class="text-sm text-gray-500">
                 Resources shared across courses
               </div>
@@ -56,7 +82,7 @@ onMounted(() => {
           <Card class="shadow-md">
             <template #title>Recent Uploads</template>
             <template #content>
-              <div class="text-3xl font-bold text-green-600">17</div>
+              <div class="text-3xl font-bold text-green-600">{{ userUploadedResources }}</div>
               <div class="text-sm text-gray-500">New resources this week</div>
             </template>
           </Card>
@@ -80,11 +106,13 @@ onMounted(() => {
               label="Upload New Resource"
               icon="pi pi-upload"
               class="p-button-primary w-full"
+              @click="$router.push({ name: 'files' })"
             />
             <Button
               label="Create Shared Folder"
               icon="pi pi-folder-plus"
               class="p-button-secondary w-full"
+              @click="$router.push({ name: 'folders' })"
             />
           </div>
         </div>
