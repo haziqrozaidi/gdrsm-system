@@ -66,7 +66,7 @@ sub startup ($self) {
     );
     return 0;
   });
-
+  $authorized->get('/api/resource/statistics')->to('SharedResource#getResourceStatistics');
   $authorized->get('/api/resources')->to('Resource#getAllResources');
   $authorized->post('/api/resources')->to('Resource#addResource');
   $authorized->put('/api/resources/:id')->to('Resource#updateResource');
