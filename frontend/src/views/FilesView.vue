@@ -2,6 +2,7 @@
     import { ref } from 'vue'
     import { onMounted } from 'vue'
     import { computed } from 'vue'
+    import { FilterMatchMode } from '@primevue/core/api';
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
@@ -25,6 +26,13 @@
     const showUpdateResourceDialog = ref(false)
     const showDeleteResourceDialog = ref(false)
     const showShareResourceDialog = ref(false)
+
+    const filters = ref({
+        'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
+        'type': { value: null, matchMode: FilterMatchMode.IN },
+        'session': { value: null, matchMode: FilterMatchMode.IN },
+        'semester': { value: null, matchMode: FilterMatchMode.IN }
+    })
 
     const categoryOptions = computed(() => {
         return categories.value.map(category => ({
@@ -212,7 +220,7 @@
         console.log('All Users:', users.value);
 
         // The selected users are already user IDs, so no need for mapping
-        const validUserIds = selectedUsers.value.filter(id => 
+        const validUserIds = selectedUsers.value.filter(id =>
             id !== null && id !== undefined
         );
 
@@ -331,7 +339,7 @@
             }
 
             const allUsers = await response.json();
-            
+
             users.value = allUsers.filter(u => u.email !== user.value.email);
         } catch (error) {
             console.error('Failed to fetch users:', error.message);
@@ -372,15 +380,45 @@
                     />
                 </div>
 
-                <DataTable :value="resources" stripedRows>
+                <DataTable
+                    v-model:filters="filters"
+                    filterDisplay="menu"
+                    :globalFilterFields="['type', 'session', 'semester']"
+                    :value="resources"
+                    stripedRows
+                >
                     <Column field="name" header="Name"></Column>
-                    <Column field="type" header="Type"></Column>
+                    <Column field="type" header="Type" :showFilterMatchModes="false">
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="['File', 'Folder']"
+                                placeholder="Select Types"
+                            />
+                        </template>
+                    </Column>
                     <Column field="description" header="Description"></Column>
                     <Column field="owner" header="Owner"></Column>
                     <Column field="link" header="Link"></Column>
                     <Column field="date_created" header="Date Added"></Column>
-                    <Column field="session" header="Session"></Column>
-                    <Column field="semester" header="Semester"></Column>
+                    <Column field="session" header="Session" :showFilterMatchModes="false">
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="['2023/2024', '2024/2025', '2025/2026']"
+                                placeholder="Select Sessions"
+                            />
+                        </template>
+                    </Column>
+                    <Column field="semester" header="Semester" :showFilterMatchModes="false">
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="['1', '2', '3']"
+                                placeholder="Select Semesters"
+                            />
+                        </template>
+                    </Column>
                     <Column header="Actions">
                         <template #body="{ data }">
                             <div class="flex gap-2">
@@ -608,10 +646,10 @@
                 </Dialog>
 
                 <!-- Share Resource Dialog -->
-                <Dialog 
-                    v-model:visible="showShareResourceDialog" 
-                    modal 
-                    header="Share Resource" 
+                <Dialog
+                    v-model:visible="showShareResourceDialog"
+                    modal
+                    header="Share Resource"
                     :style="{ width: '35rem' }"
                 >
                     <div class="mb-4">
@@ -622,9 +660,9 @@
 
                     <div class="flex items-center gap-4 mb-4">
                         <label for="users" class="font-semibold w-24">Select Users</label>
-                        <MultiSelect 
+                        <MultiSelect
                             id="users"
-                            v-model="selectedUsers" 
+                            v-model="selectedUsers"
                             :options="users"
                             optionLabel="email"
                             optionValue="user_id"
@@ -637,15 +675,15 @@
                     </div>
 
                     <div class="flex justify-end gap-2">
-                        <Button 
-                            type="button" 
-                            label="Cancel" 
-                            severity="secondary" 
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            severity="secondary"
                             @click="showShareResourceDialog = false"
                         />
-                        <Button 
-                            type="button" 
-                            label="Share" 
+                        <Button
+                            type="button"
+                            label="Share"
                             @click="shareResource"
                             :disabled="selectedUsers.length === 0"
                         />

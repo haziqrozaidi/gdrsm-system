@@ -1,10 +1,21 @@
 <script setup>
     import { ref, onMounted } from 'vue'
+    import { FilterMatchMode } from '@primevue/core/api';
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
     import Dialog from 'primevue/dialog'
+    import MultiSelect from 'primevue/multiselect'
     import Sidebar from '../components/Sidebar.vue'
+
+    const filters = ref({
+        'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
+        'session': { value: null, matchMode: FilterMatchMode.IN },
+        'semester': { value: null, matchMode: FilterMatchMode.IN },
+        'owner': { value: null, matchMode: FilterMatchMode.IN }
+    })
+
+    const ownersFilter = ref([])
 
     const sharedResources = ref([])
     const loading = ref(false)
@@ -32,6 +43,8 @@
             }
 
             sharedResources.value = await response.json();
+
+            ownersFilter.value = [...new Set(sharedResources.value.map(resource => resource.owner))]
         } catch (error) {
             console.error('Failed to fetch shared resources:', error.message);
         } finally {
@@ -81,6 +94,9 @@
                 </div>
 
                 <DataTable
+                    v-model:filters="filters"
+                    filterDisplay="menu"
+                    :globalFilterFields="['session', 'semester', 'owner']"
                     :value="sharedResources"
                     :loading="loading"
                     emptyMessage="No shared resources"
@@ -89,9 +105,33 @@
                     <Column field="name" header="Name"></Column>
                     <Column field="description" header="Description"></Column>
                     <Column field="link" header="Link"></Column>
-                    <Column field="session" header="Session"></Column>
-                    <Column field="semester" header="Semester"></Column>
-                    <Column field="owner" header="Shared By"></Column>
+                    <Column field="session" header="Session" :showFilterMatchModes="false">
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="['2023/2024', '2024/2025', '2025/2026']"
+                                placeholder="Select Sessions"
+                            />
+                        </template>
+                    </Column>
+                    <Column field="semester" header="Semester" :showFilterMatchModes="false">
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="['1', '2', '3']"
+                                placeholder="Select Semesters"
+                            />
+                        </template>
+                    </Column>
+                    <Column field="owner" header="Shared By" :showFilterMatchModes="false" :filterMenuStyle="{ width: '26rem' }">
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="ownersFilter"
+                                placeholder="Select Owners"
+                            />
+                        </template>
+                    </Column>
                     <Column field="date_shared" header="Date Shared"></Column>
                     <Column header="Actions">
                         <template #body="{ data }">
