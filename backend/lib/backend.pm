@@ -83,6 +83,7 @@ sub startup ($self) {
 
   $authorized->get('/api/folders')->to('Folder#getAllFolders');
   $authorized->get('/api/users')->to('User#getAllUsers');
+  $authorized->get('/api/user/profile')->to('Setting#getUserProfile');
 }
 
 1;
