@@ -1,236 +1,114 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
-import Button from "primevue/button";
-import Card from "primevue/card";
-import InputText from "primevue/inputtext";
-import Password from "primevue/password";
-import Divider from "primevue/divider";
-import ToggleButton from "primevue/togglebutton";
+import { ref, onMounted } from "vue";
 import Sidebar from "../components/Sidebar.vue";
 
-// State management for user information
-const fullName = ref('');
-const email = ref('');
-const currentPassword = ref('');
-const newPassword = ref('');
-const confirmPassword = ref('');
+const userData = ref({
+    username: '',
+    full_name: '',
+    email: '',
+    role: '',
+    faculty: ''
+});
 
-// Theme preferences with localStorage support
-const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
+// Retrieve user data from sessionStorage
+const getSessionData = () => {
+    const sessionData = sessionStorage.getItem('user');
+    if (sessionData) {
+        const user = JSON.parse(sessionData);
+        return {
+            username: user.login_name,
+            full_name: user.full_name,
+            email: user.email,
+            role: user.description || 'student',
+            faculty: 'Faculty of Computing'
+        };
+    }
+    return null;
+};
 
-// Notification preferences
-const emailNotifications = ref(true);
-const systemNotifications = ref(true);
-
-// Fetch user data from session
-const fetchUserData = () => {
-    const storedSession = sessionStorage.getItem('utmwebfc_session');
+// Fetch user data from the backend
+const fetchUserData = async () => {
     try {
-        const userSession = JSON.parse(storedSession);
-        fullName.value = userSession?.full_name || '';
-        email.value = userSession?.email || '';
+        // First, try to retrieve data from sessionStorage
+        const sessionData = getSessionData();
+        if (sessionData) {
+            userData.value = sessionData;
+            return;
+        }
+
+        const response = await fetch('/api/user/profile', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            userData.value = data.user;
+        } else {
+            console.error('Error:', data.error);
+        }
     } catch (error) {
-        console.error('Error parsing user session:', error);
+        console.error('Error fetching user data:', error);
     }
 };
 
-// Initialize theme on component mount
+// Fetch data when the component is mounted
 onMounted(() => {
     fetchUserData();
-    initializeTheme();
 });
-
-// Function to initialize theme based on stored preference
-const initializeTheme = () => {
-    // Check localStorage first, then system preference
-    const storedTheme = localStorage.getItem('theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (storedTheme) {
-        isDarkMode.value = storedTheme === 'dark';
-    } else {
-        isDarkMode.value = systemPrefersDark;
-    }
-    
-    applyTheme(isDarkMode.value);
-};
-
-// Function to apply theme
-const applyTheme = (isDark) => {
-    if (isDark) {
-        document.documentElement.classList.add('dark');
-    } else {
-        document.documentElement.classList.remove('dark');
-    }
-};
-
-// Handle theme toggle with persistence
-const toggleTheme = () => {
-    // Update localStorage with new theme preference
-    localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
-    applyTheme(isDarkMode.value);
-};
-
-// Watch for theme changes
-watch(isDarkMode, (newValue) => {
-    applyTheme(newValue);
-});
-
-// Handle profile update
-const updateProfile = () => {
-    // TODO: Implement profile update logic
-    console.log('Profile update requested');
-};
-
-// Handle password change
-const changePassword = () => {
-    // TODO: Implement password change logic
-    console.log('Password change requested');
-};
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+    <div class="flex min-h-screen bg-gray-50">
         <Sidebar />
         <div class="grow p-6">
             <div class="container mx-auto max-w-4xl">
-                <!-- Page Header -->
+                <!-- Page Title -->
                 <div class="flex justify-between items-center mb-8">
-                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
-                        Settings
+                    <h1 class="text-3xl font-bold text-gray-800">
+                        User Profile
                     </h1>
                 </div>
 
-                <!-- Profile Settings -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 transition-all duration-200">
+                <!-- Profile Information Display -->
+                <div class="bg-white rounded-lg shadow-md mb-6">
                     <div class="p-6">
-                        <div class="flex items-center mb-4">
-                            <i class="pi pi-user text-blue-500 mr-2"></i>
-                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Profile Settings</h2>
+                        <!-- Loading State -->
+                        <div v-if="loading" class="flex justify-center items-center py-8">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                            <span class="ml-2 text-gray-600">Loading profile data...</span>
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Full Name
-                                </label>
-                                <InputText v-model="fullName" 
-                                         class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
-                                                focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Email
-                                </label>
-                                <InputText v-model="email" type="email" 
-                                         class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg
-                                                focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent" />
-                            </div>
-                            <Button label="Update Profile" 
-                                   icon="pi pi-check" 
-                                   @click="updateProfile"
-                                   class="w-full md:w-auto bg-blue-500 hover:bg-blue-600 transition-colors duration-200" />
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Password Change -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md mb-6 transition-all duration-200">
-                    <div class="p-6">
-                        <div class="flex items-center mb-4">
-                            <i class="pi pi-lock text-green-500 mr-2"></i>
-                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Change Password</h2>
+                        <!-- Error State -->
+                        <div v-else-if="error" class="text-center py-8">
+                            <p class="text-red-500 mb-4">{{ error }}</p>
+                            <button 
+                                @click="retryFetch"
+                                class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            >
+                                Retry
+                            </button>
                         </div>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Current Password
-                                </label>
-                                <Password v-model="currentPassword" toggleMask 
-                                         class="w-full" 
-                                         inputClass="w-full p-3 bg-gray-50 dark:bg-gray-700" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    New Password
-                                </label>
-                                <Password v-model="newPassword" toggleMask 
-                                         class="w-full"
-                                         inputClass="w-full p-3 bg-gray-50 dark:bg-gray-700" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                    Confirm New Password
-                                </label>
-                                <Password v-model="confirmPassword" toggleMask 
-                                         class="w-full"
-                                         inputClass="w-full p-3 bg-gray-50 dark:bg-gray-700" />
-                            </div>
-                            <Button label="Change Password" 
-                                   icon="pi pi-lock" 
-                                   @click="changePassword"
-                                   class="w-full md:w-auto bg-green-500 hover:bg-green-600 transition-colors duration-200" />
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Preferences -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md transition-all duration-200">
-                    <div class="p-6">
-                        <div class="flex items-center mb-4">
-                            <i class="pi pi-cog text-purple-500 mr-2"></i>
-                            <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Preferences</h2>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                                <div class="flex items-center space-x-3">
-                                    <i :class="[
-                                        isDarkMode ? 'pi pi-moon text-indigo-500 dark:text-indigo-400' : 'pi pi-sun text-yellow-500 dark:text-yellow-400'
-                                    ]"></i>
-                                    <div>
-                                        <span class="block text-gray-700 dark:text-gray-200 font-medium">Theme Mode</span>
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ isDarkMode ? 'Dark theme enabled' : 'Light theme enabled' }}
-                                        </span>
-                                    </div>
-                                </div>
-                                <ToggleButton v-model="isDarkMode" 
-                                            @change="toggleTheme"
-                                            class="transform hover:scale-105 transition-transform duration-200"
-                                            :class="{'dark-mode-toggle': true}"
-                                            :onIcon="'pi pi-moon'"
-                                            :offIcon="'pi pi-sun'"
-                                            :onLabel="'Dark'"
-                                            :offLabel="'Light'"
-                                            aria-label="Toggle Theme" />
+                        <!-- Data Display -->
+                        <div v-else class="space-y-6">
+                            <div class="flex items-center mb-4">
+                                <i class="pi pi-user text-blue-500 mr-2"></i>
+                                <h2 class="text-xl font-semibold text-gray-800">Profile Information</h2>
                             </div>
                             
-                            <!-- Other preference toggles with similar styling -->
-                            <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                                <div class="flex items-center space-x-3">
-                                    <i class="pi pi-envelope text-green-500 dark:text-green-400"></i>
-                                    <div>
-                                        <span class="block text-gray-700 dark:text-gray-200 font-medium">Email Notifications</span>
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">
-                                            Receive email updates about your account
-                                        </span>
-                                    </div>
-                                </div>
-                                <ToggleButton v-model="emailNotifications"
-                                            class="transform hover:scale-105 transition-transform duration-200" />
-                            </div>
-
-                            <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200">
-                                <div class="flex items-center space-x-3">
-                                    <i class="pi pi-bell text-yellow-500 dark:text-yellow-400"></i>
-                                    <div>
-                                        <span class="block text-gray-700 dark:text-gray-200 font-medium">System Notifications</span>
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">
-                                            Receive system notifications and alerts
-                                        </span>
-                                    </div>
-                                </div>
-                                <ToggleButton v-model="systemNotifications"
-                                            class="transform hover:scale-105 transition-transform duration-200" />
+                            <!-- User Data Display -->
+                            <div v-for="(value, key) in userData" :key="key" class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-1 capitalize">
+                                    {{ key.replace('_', ' ') }}
+                                </label>
+                                <p class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg">
+                                    {{ value }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -241,69 +119,11 @@ const changePassword = () => {
 </template>
 
 <style scoped>
-/* Custom styles for dark mode toggle */
-:deep(.dark-mode-toggle.p-button) {
-    background: var(--surface-200);
-    border: none;
-    transition: all 0.2s ease;
-    min-width: 80px; /* Add minimum width for better appearance */
+.rounded-lg {
+    border-radius: 0.5rem;
 }
 
-:deep(.dark-mode-toggle.p-button:not(.p-disabled):hover) {
-    background: var(--surface-300);
-}
-
-:deep(.dark-mode-toggle.p-button.p-highlight) {
-    background: var(--primary-color);
-}
-
-/* Add icon specific styles */
-:deep(.dark-mode-toggle.p-button .p-button-icon) {
-    font-size: 1.2rem;
-    transition: transform 0.3s ease;
-}
-
-:deep(.dark-mode-toggle.p-button:hover .p-button-icon) {
-    transform: rotate(12deg);
-}
-
-/* Add specific styles for light mode icon */
-:deep(.dark-mode-toggle.p-button:not(.p-highlight) .pi-sun) {
-    color: var(--yellow-500);
-}
-
-/* Add specific styles for dark mode icon */
-:deep(.dark-mode-toggle.p-button.p-highlight .pi-moon) {
-    color: var(--indigo-200);
-}
-
-/* Password input dark mode styles */
-:deep(.p-password input) {
-    width: 100%;
-    transition: all 0.2s ease;
-}
-
-:deep(.dark .p-password input) {
-    background-color: var(--surface-900);
-    color: var(--surface-0);
-    border-color: var(--surface-700);
-}
-
-/* Toggle button general styles */
-:deep(.p-togglebutton.p-button) {
-    background: var(--surface-200);
-    border: none;
-    transition: all 0.2s ease;
-}
-
-:deep(.p-togglebutton.p-button.p-highlight) {
-    background: var(--primary-color);
-}
-
-/* Add smooth transitions for all interactive elements */
-.transition-all {
-    transition-property: all;
-    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-    transition-duration: 150ms;
+.shadow-md {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 </style>
