@@ -52,8 +52,13 @@
                 },
                 {
                     label: 'Sharing',
-                    icon: 'pi pi-users',
+                    icon: 'pi pi-share-alt',
                     route: '/sharing'
+                },
+                {
+                    label: 'Groups',
+                    icon: 'pi pi-users',
+                    route: '/groups'
                 }
             ]
         },

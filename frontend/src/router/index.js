@@ -10,6 +10,7 @@ import SharingView from '../views/SharingView.vue'
 import SearchView from '../views/SearchView.vue'
 import SettingView from '../views/SettingView.vue'
 import CategoriesView from '../views/CategoriesView.vue'
+import GroupsView from '../views/GroupsView.vue'
 
 const routes = [
   {
@@ -61,6 +62,12 @@ const routes = [
     path: '/sharing',
     name: 'sharing',
     component: SharingView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/groups',
+    name: 'groups',
+    component: GroupsView,
     meta: { requiresAuth: true }
   },
   {
