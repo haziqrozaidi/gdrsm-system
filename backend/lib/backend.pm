@@ -86,6 +86,9 @@ sub startup ($self) {
   $authorized->get('/api/user/profile')->to('Setting#getUserProfile');
 
   $authorized->get('/api/groups')->to('UserGroup#getAllUserGroups');
+
+  # Group Resource
+  $authorized->get('/api/groups/:group_id/resources')->to('GroupResource#getGroupResources');
 }
 
 1;
