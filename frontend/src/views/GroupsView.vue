@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+    import { ref, onMounted } from 'vue'
     import Sidebar from '../components/Sidebar.vue'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
@@ -7,10 +7,16 @@ import { ref, onMounted } from 'vue'
     import Dialog from 'primevue/dialog'
     import InputText from 'primevue/inputtext'
     import Textarea from 'primevue/textarea'
+    import TabView from 'primevue/tabview'
+    import TabPanel from 'primevue/tabpanel'
+    import Tag from 'primevue/tag'
 
     const user = ref({})
     const groups = ref([])
     const showCreateGroupDialog = ref(false)
+    const selectedGroup = ref(null)
+    const groupResources = ref([])
+    const groupMembers = ref([])
 
     const group = ref({
         name: '',
@@ -37,6 +43,55 @@ import { ref, onMounted } from 'vue'
         }
     }
 
+    const fetchGroupDetails = async (groupId) => {
+        try {
+            // Fetch group resources
+            const resourcesResponse = await fetch(`http://127.0.0.1:3000/api/groups/${groupId}/resources`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!resourcesResponse.ok) {
+                throw new Error(`Resources response status: ${resourcesResponse.status}`);
+            }
+
+            groupResources.value = await resourcesResponse.json();
+
+            // Fetch group members
+            const membersResponse = await fetch(`http://127.0.0.1:3000/api/groups/${groupId}/members`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!membersResponse.ok) {
+                throw new Error(`Members response status: ${membersResponse.status}`);
+            }
+
+            groupMembers.value = await membersResponse.json();
+        } catch (error) {
+            console.error('Failed to fetch group details:', error.message);
+        }
+    }
+
+    const onRowSelect = (event) => {
+        selectedGroup.value = event.data;
+        fetchGroupDetails(event.data.group_id);
+    }
+
+    const backToGroupList = () => {
+        selectedGroup.value = null;
+    }
+
+    const openResourceLink = (link) => {
+        window.open(link, '_blank');
+    }
+
     onMounted(() => {
         const userString = sessionStorage.getItem('user')
         if (userString) {
@@ -55,7 +110,7 @@ import { ref, onMounted } from 'vue'
         <Sidebar />
         <div class="grow bg-gray-100 p-4">
             <div class="card">
-                <div class="flex justify-between mb-4">
+                <div v-if="!selectedGroup" class="flex justify-between mb-4">
                     <h2 class="text-2xl font-bold">Group Management</h2>
                     <Button
                         label="Create New Group"
@@ -64,23 +119,79 @@ import { ref, onMounted } from 'vue'
                     />
                 </div>
 
-                <DataTable
-                    :value="groups"
-                    stripedRows
-                >
-                    <Column field="name" header="Group Name"></Column>
-                    <Column field="description" header="Description"></Column>
-                    <Column field="date_created" header="Date Created"></Column>
-                    <Column header="Actions">
-                        <template #body="{ data }">
-                            <Button
-                                icon="pi pi-sign-out"
-                                class="p-button-danger p-button-sm"
-                                @click="leaveGroup(data.group_id)"
-                            />
-                        </template>
-                    </Column>
-                </DataTable>
+                <div v-if="!selectedGroup">
+                    <DataTable
+                        :value="groups"
+                        stripedRows
+                        selectionMode="single"
+                        @row-select="onRowSelect"
+                    >
+                        <Column field="name" header="Group Name"></Column>
+                        <Column field="description" header="Description"></Column>
+                        <Column field="date_created" header="Date Created"></Column>
+                        <Column header="Actions">
+                            <template #body="{ data }">
+                                <Button
+                                    icon="pi pi-sign-out"
+                                    class="p-button-danger p-button-sm"
+                                    @click="leaveGroup(data.group_id)"
+                                />
+                            </template>
+                        </Column>
+                    </DataTable>
+                </div>
+
+                <div v-else>
+                    <div class="flex justify-between mb-4">
+                        <h2 class="text-2xl font-bold">
+                            {{ selectedGroup.name }} Details
+                        </h2>
+                        <Button
+                            label="Back to Groups"
+                            icon="pi pi-arrow-left"
+                            @click="backToGroupList"
+                        />
+                    </div>
+
+                    <TabView>
+                        <TabPanel header="Resources">
+                            <DataTable :value="groupResources" stripedRows>
+                                <Column field="name" header="Name"></Column>
+                                <Column header="Category">
+                                    <template #body="{ data }">
+                                        <Tag :value="data.category_name" severity="info" rounded />
+                                    </template>
+                                </Column>
+                                <Column field="description" header="Description"></Column>
+                                <Column field="owner" header="Owner"></Column>
+                                <Column field="date_created" header="Date Added"></Column>
+                                <Column header="Session">
+                                    <template #body="{ data }">
+                                        {{ data.session }}-{{ data.semester }}
+                                    </template>
+                                </Column>
+                                <Column header="Link">
+                                    <template #body="{ data }">
+                                        <Button
+                                            icon="pi pi-external-link"
+                                            class="p-button-text p-button-sm"
+                                            @click="openResourceLink(data.link)"
+                                        />
+                                    </template>
+                                </Column>
+                            </DataTable>
+                        </TabPanel>
+                        <TabPanel header="Members">
+                            <DataTable :value="groupMembers" stripedRows>
+                                <Column field="full_name" header="Full Name"></Column>
+                                <Column field="role" header="Role"></Column>
+                                <Column field="email" header="Email"></Column>
+                                <Column field="username" header="Username"></Column>
+                                <Column field="date_joined" header="Joined Date"></Column>
+                            </DataTable>
+                        </TabPanel>
+                    </TabView>
+                </div>
             </div>
         </div>
     </div>
