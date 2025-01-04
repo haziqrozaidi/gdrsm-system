@@ -89,6 +89,9 @@ sub startup ($self) {
 
   # Group Resource
   $authorized->get('/api/groups/:group_id/resources')->to('GroupResource#getGroupResources');
+
+  # Group Member
+  $authorized->get('/api/groups/:group_id/members')->to('GroupMember#getGroupMembers');
 }
 
 1;
