@@ -79,6 +79,53 @@
         }
     }
 
+    const createGroup = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/groups', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: group.value.name,
+                    description: group.value.description
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Group creation failed');
+            }
+
+            const newGroup = await response.json();
+            console.log('Group created successfully:', newGroup);
+
+            // Reset the group form
+            group.value = {
+                name: '',
+                description: ''
+            };
+
+            // Close the dialog
+            showCreateGroupDialog.value = false;
+
+            // Refresh the groups list
+            await fetchUserGroups();
+
+        } catch (error) {
+            console.error('Failed to create group:', error.message);
+        }
+    }
+
+    const closeCreateGroupDialog = () => {
+        group.value = {
+            name: '',
+            description: ''
+        };
+        showCreateGroupDialog.value = false;
+    }
+
     const onRowSelect = (event) => {
         selectedGroup.value = event.data;
         fetchGroupDetails(event.data.group_id);
@@ -192,6 +239,52 @@
                         </TabPanel>
                     </TabView>
                 </div>
+
+                <!-- Create Group Dialog -->
+                <Dialog
+                    v-model:visible="showCreateGroupDialog"
+                    modal
+                    header="Create New Group"
+                    :style="{ width: '30rem' }"
+                     @hide="closeCreateGroupDialog"
+                >
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="groupName" class="font-semibold w-24">Group Name</label>
+                        <InputText
+                            id="groupName"
+                            v-model="group.name"
+                            class="flex-auto"
+                            autocomplete="off"
+                            placeholder="Enter group name"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-8">
+                        <label for="groupDescription" class="font-semibold w-24">Description</label>
+                        <Textarea
+                            id="groupDescription"
+                            v-model="group.description"
+                            class="flex-auto"
+                            rows="3"
+                            placeholder="Enter group description"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            severity="secondary"
+                            @click="closeCreateGroupDialog"
+                        />
+                        <Button
+                            type="button"
+                            label="Create"
+                            @click="createGroup"
+                            :disabled="!group.name"
+                        />
+                    </div>
+                </Dialog>
             </div>
         </div>
     </div>
