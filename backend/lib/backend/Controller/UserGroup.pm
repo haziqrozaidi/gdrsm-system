@@ -78,13 +78,19 @@ sub getAllUserGroups {
     # Fetch groups for the current user
     my $groups_sth = eval {
         my $prep = $dbh->prepare(
-            'SELECT ug.group_id, ug.name, ug.description, ug.date_created,
-                    (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = ug.group_id) as member_count
-             FROM user_group ug
-             JOIN group_members gm ON ug.group_id = gm.group_id
-             WHERE gm.user_id = ?'
+            'SELECT
+                ug.group_id,
+                ug.name,
+                ug.description,
+                ug.date_created,
+                ug.user_id AS owner_id,
+                (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = ug.group_id) as member_count,
+                CASE WHEN ug.user_id = ? THEN "Created" ELSE "Invited" END as membership_status
+            FROM user_group ug
+            JOIN group_members gm ON ug.group_id = gm.group_id
+            WHERE gm.user_id = ?'
         );
-        $prep->execute($user_id);
+        $prep->execute($user_id, $user_id);
         $prep;
     };
 

@@ -174,6 +174,15 @@
                         @row-select="onRowSelect"
                     >
                         <Column field="name" header="Group Name"></Column>
+                        <Column field="membership_status" header="Category">
+                            <template #body="{ data }">
+                                <Tag
+                                    :value="data.membership_status"
+                                    :severity="data.membership_status === 'Created' ? 'success' : 'info'"
+                                    rounded
+                                />
+                            </template>
+                        </Column>
                         <Column field="description" header="Description"></Column>
                         <Column field="date_created" header="Date Created"></Column>
                         <Column header="Actions">
