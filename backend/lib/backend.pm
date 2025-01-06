@@ -90,6 +90,7 @@ sub startup ($self) {
   $authorized->post('/api/groups')->to('UserGroup#createGroup');
   $authorized->post('/api/groups/:group_id/leave')->to('UserGroup#leaveGroup');
   $authorized->delete('/api/groups/:group_id')->to('UserGroup#deleteGroup');
+  $authorized->put('/api/groups/:group_id')->to('UserGroup#updateGroup');
 
   # Group Resource
   $authorized->get('/api/groups/:group_id/resources')->to('GroupResource#getGroupResources');
