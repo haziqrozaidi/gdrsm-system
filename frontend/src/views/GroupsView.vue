@@ -25,10 +25,36 @@
     const groupResources = ref([])
     const groupMembers = ref([])
 
+    const showEditGroupDialog = ref(false)
+
     const group = ref({
         name: '',
         description: ''
     })
+
+    const editingGroup = ref({
+        group_id: null,
+        name: '',
+        description: ''
+    })
+
+    const openEditGroupDialog = (group) => {
+        editingGroup.value = {
+            group_id: group.group_id,
+            name: group.name,
+            description: group.description
+        }
+        showEditGroupDialog.value = true
+    }
+
+    const closeEditGroupDialog = () => {
+        showEditGroupDialog.value = false
+        editingGroup.value = {
+            group_id: null,
+            name: '',
+            description: ''
+        }
+    }
 
     const fetchUserGroups = async () => {
         try {
@@ -247,6 +273,49 @@
         });
     }
 
+    const updateGroup = async () => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/groups/${editingGroup.value.group_id}`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: editingGroup.value.name,
+                    description: editingGroup.value.description
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Group update failed');
+            }
+
+            // Close the dialog
+            showEditGroupDialog.value = false;
+
+            // Refresh the groups list
+            await fetchUserGroups();
+
+            // Show success toast
+            toast.add({
+                severity: 'success',
+                summary: 'Group Updated',
+                detail: 'Group has been successfully updated',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to update group:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Update Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
@@ -318,6 +387,15 @@
                         <Column field="date_created" header="Date Created"></Column>
                         <Column header="Actions">
                             <template #body="{ data }">
+                                <Button
+                                    v-if="data.membership_status === 'Created'"
+                                    icon="pi pi-pencil"
+                                    outlined
+                                    rounded
+                                    severity="info"
+                                    class="mr-2"
+                                    @click="openEditGroupDialog(data)"
+                                />
                                 <Button
                                     v-if="data.membership_status === 'Created'"
                                     icon="pi pi-trash"
@@ -434,6 +512,52 @@
                             label="Create"
                             @click="createGroup"
                             :disabled="!group.name"
+                        />
+                    </div>
+                </Dialog>
+
+                <!-- Edit Group Dialog -->
+                <Dialog
+                    v-model:visible="showEditGroupDialog"
+                    modal
+                    header="Edit Group"
+                    :style="{ width: '30rem' }"
+                    @hide="closeEditGroupDialog"
+                >
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="editGroupName" class="font-semibold w-24">Group Name</label>
+                        <InputText
+                            id="editGroupName"
+                            v-model="editingGroup.name"
+                            class="flex-auto"
+                            autocomplete="off"
+                            placeholder="Enter group name"
+                        />
+                    </div>
+
+                    <div class="flex items-center gap-4 mb-8">
+                        <label for="editGroupDescription" class="font-semibold w-24">Description</label>
+                        <Textarea
+                            id="editGroupDescription"
+                            v-model="editingGroup.description"
+                            class="flex-auto"
+                            rows="3"
+                            placeholder="Enter group description"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            severity="secondary"
+                            @click="closeEditGroupDialog"
+                        />
+                        <Button
+                            type="button"
+                            label="Update"
+                            @click="updateGroup"
+                            :disabled="!editingGroup.name"
                         />
                     </div>
                 </Dialog>
