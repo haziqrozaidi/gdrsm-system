@@ -258,4 +258,143 @@ sub createGroup {
     );
 }
 
+sub leaveGroup {
+    my $c = shift;
+
+    # Get the username from the session
+    my $username = $c->session('login_name');
+    my $group_id = $c->stash('group_id');
+
+    unless ($username) {
+        return $c->render(
+            json => {error => 'User not authenticated'},
+            status => 401
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Get user_id for the current user
+    my $user_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT user_id FROM user WHERE username = ?'
+        );
+        $prep->execute($username);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Fetching user_id failed: ' . $@},
+            status => 500
+        );
+    }
+
+    my $user_row = $user_sth->fetchrow_hashref;
+    $user_sth->finish;
+
+    unless ($user_row && $user_row->{user_id}) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'User not found'},
+            status => 404
+        );
+    }
+
+    my $user_id = $user_row->{user_id};
+
+    # Check if the user is the group owner
+    my $owner_check_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT 1 FROM user_group WHERE group_id = ? AND user_id = ?'
+        );
+        $prep->execute($group_id, $user_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Group ownership check failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Prevent group owner from leaving their own group
+    if ($owner_check_sth->fetchrow_array) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Group owner cannot leave their own group'},
+            status => 403
+        );
+    }
+
+    # Remove user from group members
+    my $leave_group_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM group_members WHERE group_id = ? AND user_id = ?'
+        );
+        $prep->execute($group_id, $user_id);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Leaving group failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Check if any rows were deleted
+    if ($leave_group_sth->rows == 0) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'You are not a member of this group'},
+            status => 404
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Successfully left the group',
+            group_id => $group_id
+        },
+        status => 200
+    );
+}
+
 1;
