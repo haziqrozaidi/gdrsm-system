@@ -1,5 +1,7 @@
 <script setup>
     import { ref, onMounted } from 'vue'
+    import { useConfirm } from "primevue/useconfirm";
+    import { useToast } from "primevue/usetoast";
     import Sidebar from '../components/Sidebar.vue'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
@@ -10,6 +12,11 @@
     import TabView from 'primevue/tabview'
     import TabPanel from 'primevue/tabpanel'
     import Tag from 'primevue/tag'
+    import ConfirmDialog from 'primevue/confirmdialog'
+    import Toast from 'primevue/toast'
+
+    const confirm = useConfirm();
+    const toast = useToast();
 
     const user = ref({})
     const groups = ref([])
@@ -118,6 +125,67 @@
         }
     }
 
+    const leaveGroup = async (groupId) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/groups/${groupId}/leave`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Leaving group failed');
+            }
+
+            // Refresh the groups list
+            await fetchUserGroups();
+
+            toast.add({
+                severity: 'success',
+                summary: 'Group Left',
+                detail: 'You have successfully left the group',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to leave group:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Leave Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
+    const confirmLeaveGroup = (groupId) => {
+        confirm.require({
+            message: 'Are you sure you want to leave this group?',
+            header: 'Confirm Group Leaving',
+            icon: 'pi pi-info-circle',
+            rejectProps: {
+                label: 'Cancel',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: 'Leave',
+                severity: 'warning'
+            },
+            accept: () => leaveGroup(groupId),
+            reject: () => {
+                toast.add({
+                    severity: 'info',
+                    summary: 'Cancelled',
+                    detail: 'Group leaving cancelled',
+                    life: 3000
+                });
+            }
+        });
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
@@ -153,6 +221,8 @@
 </script>
 
 <template>
+    <Toast />
+    <ConfirmDialog></ConfirmDialog>
     <div class="flex min-h-screen">
         <Sidebar />
         <div class="grow bg-gray-100 p-4">
@@ -188,9 +258,21 @@
                         <Column header="Actions">
                             <template #body="{ data }">
                                 <Button
+                                    v-if="data.membership_status === 'Created'"
+                                    icon="pi pi-trash"
+                                    outlined
+                                    rounded
+                                    severity="danger"
+                                    class="mr-2"
+                                    @click="confirmDeleteGroup(data.group_id)"
+                                />
+                                <Button
+                                    v-else-if="data.membership_status === 'Invited'"
                                     icon="pi pi-sign-out"
-                                    class="p-button-danger p-button-sm"
-                                    @click="leaveGroup(data.group_id)"
+                                    outlined
+                                    rounded
+                                    severity="warning"
+                                    @click="confirmLeaveGroup(data.group_id)"
                                 />
                             </template>
                         </Column>
