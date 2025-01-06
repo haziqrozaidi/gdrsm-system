@@ -186,6 +186,67 @@
         });
     }
 
+    const deleteGroup = async (groupId) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/groups/${groupId}`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Group deletion failed');
+            }
+
+            // Refresh the groups list
+            await fetchUserGroups();
+
+            toast.add({
+                severity: 'success',
+                summary: 'Group Deleted',
+                detail: 'Group has been successfully deleted',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to delete group:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Deletion Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
+    const confirmDeleteGroup = (groupId) => {
+        confirm.require({
+            message: 'Are you sure you want to delete this group?',
+            header: 'Confirm Group Deletion',
+            icon: 'pi pi-exclamation-triangle',
+            rejectProps: {
+                label: 'Cancel',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: 'Delete',
+                severity: 'danger'
+            },
+            accept: () => deleteGroup(groupId),
+            reject: () => {
+                toast.add({
+                    severity: 'info',
+                    summary: 'Cancelled',
+                    detail: 'Group deletion cancelled',
+                    life: 3000
+                });
+            }
+        });
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
