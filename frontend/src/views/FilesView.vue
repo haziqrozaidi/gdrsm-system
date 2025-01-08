@@ -3,6 +3,7 @@
     import { onMounted } from 'vue'
     import { computed } from 'vue'
     import { FilterMatchMode } from '@primevue/core/api';
+    import { useToast } from 'primevue/usetoast'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
     import Button from 'primevue/button'
@@ -12,6 +13,10 @@
     import Textarea from 'primevue/textarea';
     import Sidebar from '../components/Sidebar.vue'
     import MultiSelect from 'primevue/multiselect'
+    import Tag from 'primevue/tag'
+    import Toast from 'primevue/toast'
+
+    const toast = useToast()
 
     const resources = ref([])
     const categories = ref([])
@@ -138,8 +143,21 @@
 
             showAddResourceDialog.value = false
 
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Resource Added Successfully',
+                life: 3000
+            })
+
         } catch (error) {
             console.error(error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
         }
     }
 
@@ -179,8 +197,21 @@
             showUpdateResourceDialog.value = false
             resourceToUpdate.value = null
 
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Resource Updated Successfully',
+                life: 3000
+            })
+
         } catch (error) {
             console.error(error.message)
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
         }
     }
 
@@ -204,8 +235,22 @@
             await fetchResources()
             showDeleteResourceDialog.value = false
             resourceToDelete.value = null
+
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Resource Deleted Successfully',
+                life: 3000
+            })
+
         } catch (error) {
             console.error(error.message)
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
         }
     }
 
@@ -253,8 +298,21 @@
             resourceToShare.value = null;
             selectedUsers.value = [];
 
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Resource Shared Successfully',
+                life: 3000
+            })
+
         } catch (error) {
             console.error('Share resource error:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            })
         }
     }
 
@@ -346,6 +404,10 @@
         }
     }
 
+    const openResourceLink = (link) => {
+        window.open(link, '_blank');
+    }
+
     onMounted(() => {
         fetchResources();
         fetchCategories();
@@ -388,34 +450,23 @@
                     stripedRows
                 >
                     <Column field="name" header="Name"></Column>
-                    <Column field="type" header="Type" :showFilterMatchModes="false">
-                        <template #filter="{ filterModel }">
-                            <MultiSelect
-                                v-model="filterModel.value"
-                                :options="['File', 'Folder']"
-                                placeholder="Select Types"
-                            />
+                    <Column header="Category">
+                        <template #body="{ data }">
+                            <Tag :value="data.category_name" severity="info" rounded />
                         </template>
                     </Column>
                     <Column field="description" header="Description"></Column>
                     <Column field="owner" header="Owner"></Column>
-                    <Column field="link" header="Link"></Column>
                     <Column field="date_created" header="Date Added"></Column>
                     <Column field="session" header="Session" :showFilterMatchModes="false">
-                        <template #filter="{ filterModel }">
-                            <MultiSelect
-                                v-model="filterModel.value"
-                                :options="['2023/2024', '2024/2025', '2025/2026']"
-                                placeholder="Select Sessions"
-                            />
+                        <template #body="{ data }">
+                            {{ data.session }}-{{ data.semester }}
                         </template>
-                    </Column>
-                    <Column field="semester" header="Semester" :showFilterMatchModes="false">
                         <template #filter="{ filterModel }">
                             <MultiSelect
                                 v-model="filterModel.value"
-                                :options="['1', '2', '3']"
-                                placeholder="Select Semesters"
+                                :options="['2023/2024-1', '2023/2024-2', '2024/2025-1', '2024/2025-2']"
+                                placeholder="Select Sessions"
                             />
                         </template>
                     </Column>
@@ -423,19 +474,33 @@
                         <template #body="{ data }">
                             <div class="flex gap-2">
                                 <Button
+                                    icon="pi pi-external-link"
+                                    outlined
+                                    rounded
+                                    severity="secondary"
+                                    @click="openResourceLink(data.link)"
+                                    title="Open Resource Link"
+                                />
+                                <Button
                                     icon="pi pi-pencil"
-                                    class="p-button-info p-button-sm"
+                                    outlined
+                                    rounded
+                                    severity="secondary"
                                     @click="openEditResourceDialog(data)"
                                 />
                                 <Button
-                                    icon="pi pi-trash"
-                                    class="p-button-danger p-button-sm"
-                                    @click="openDeleteResourceDialog(data)"
+                                    icon="pi pi-share-alt"
+                                    outlined
+                                    rounded
+                                    severity="secondary"
+                                    @click="openShareResourceDialog(data)"
                                 />
                                 <Button
-                                    icon="pi pi-share-alt"
-                                    class="p-button-success p-button-sm"
-                                    @click="openShareResourceDialog(data)"
+                                    icon="pi pi-trash"
+                                    outlined
+                                    rounded
+                                    severity="danger"
+                                    @click="openDeleteResourceDialog(data)"
                                 />
                             </div>
                         </template>
