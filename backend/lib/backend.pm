@@ -105,6 +105,7 @@ sub startup ($self) {
   # Group Member
   $authorized->get('/api/groups/:group_id/members')->to('GroupMember#getGroupMembers');
   $authorized->post('/api/groups/:group_id/members/add')->to('GroupMember#addGroupMembers');
+  $r->delete('/api/groups/:group_id/members/remove')->to('GroupMember#removeGroupMember');
 }
 
 1;
