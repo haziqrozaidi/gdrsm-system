@@ -408,6 +408,68 @@
         }
     }
 
+    const deleteGroupResource = async (resourceId) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/resources/delete`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ resource_id: resourceId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Resource deletion failed');
+            }
+
+            // Refresh group resources
+            await fetchGroupDetails(selectedGroup.value.group_id);
+
+            toast.add({
+                severity: 'success',
+                summary: 'Resource Removed',
+                detail: 'Resource has been removed from the group',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to delete resource from group:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Deletion Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
+    const confirmDeleteGroupResource = (resourceId) => {
+        confirm.require({
+            message: 'Are you sure you want to remove this resource from the group?',
+            header: 'Confirm Resource Removal',
+            icon: 'pi pi-exclamation-triangle',
+            rejectProps: {
+                label: 'Cancel',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: 'Remove',
+                severity: 'danger'
+            },
+            accept: () => deleteGroupResource(resourceId),
+            reject: () => {
+                toast.add({
+                    severity: 'info',
+                    summary: 'Cancelled',
+                    detail: 'Resource removal cancelled',
+                    life: 3000
+                });
+            }
+        });
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
@@ -546,12 +608,25 @@
                                         {{ data.session }}-{{ data.semester }}
                                     </template>
                                 </Column>
-                                <Column header="Link">
+                                <Column header="Actions">
                                     <template #body="{ data }">
                                         <Button
                                             icon="pi pi-external-link"
-                                            class="p-button-text p-button-sm"
+                                            outlined
+                                            rounded
+                                            severity="info"
+                                            class="mr-2"
                                             @click="openResourceLink(data.link)"
+                                            title="Open Resource Link"
+                                        />
+                                        <Button
+                                            v-if="selectedGroup.membership_status === 'Created'"
+                                            icon="pi pi-trash"
+                                            outlined
+                                            rounded
+                                            severity="danger"
+                                            @click="confirmDeleteGroupResource(data.resource_id)"
+                                            title="Remove Resource from Group"
                                         />
                                     </template>
                                 </Column>
