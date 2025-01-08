@@ -29,6 +29,10 @@
     const groupResources = ref([])
     const groupMembers = ref([])
     const userOwnedResources = ref([])
+    const availableUsers = ref([])
+    const selectedUsersToAdd = ref([])
+    const showAddMembersDialog = ref(false)
+
 
     const group = ref({
         name: '',
@@ -67,6 +71,16 @@
     const closeShareResourceDialog = () => {
         showShareResourceDialog.value = false;
         selectedResourcesToShare.value = [];
+    }
+
+    const openAddMembersDialog = () => {
+        fetchAvailableUsers();
+        showAddMembersDialog.value = true;
+    }
+
+    const closeAddMembersDialog = () => {
+        showAddMembersDialog.value = false;
+        selectedUsersToAdd.value = [];
     }
 
     const fetchUserGroups = async () => {
@@ -470,6 +484,84 @@
         });
     }
 
+    const fetchAvailableUsers = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/users', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            availableUsers.value = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch available users:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Fetch Failed',
+                detail: 'Could not fetch available users',
+                life: 3000
+            });
+        }
+    }
+
+    const addGroupMembers = async () => {
+        if (!selectedGroup.value || selectedUsersToAdd.value.length === 0) {
+            toast.add({
+                severity: 'warn',
+                summary: 'Invalid Selection',
+                detail: 'Please select users to add',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members/add`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_ids: selectedUsersToAdd.value.map(u => u.user_id)
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Adding members failed');
+            }
+
+            // Refresh group members
+            await fetchGroupDetails(selectedGroup.value.group_id);
+
+            // Reset dialog
+            showAddMembersDialog.value = false;
+            selectedUsersToAdd.value = [];
+
+            toast.add({
+                severity: 'success',
+                summary: 'Members Added',
+                detail: 'Users successfully added to the group',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to add members:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Adding Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
@@ -633,6 +725,13 @@
                             </DataTable>
                         </TabPanel>
                         <TabPanel header="Members">
+                            <div class="flex justify-end mb-3" v-if="selectedGroup.membership_status === 'Created'">
+                                <Button
+                                    label="Add Members"
+                                    icon="pi pi-plus"
+                                    @click="openAddMembersDialog"
+                                />
+                            </div>
                             <DataTable :value="groupMembers" stripedRows>
                                 <Column field="full_name" header="Full Name"></Column>
                                 <Column field="role" header="Role"></Column>
@@ -771,6 +870,47 @@
                             label="Share"
                             @click="shareResourcesWithGroup"
                             :disabled="selectedResourcesToShare.length === 0"
+                        />
+                    </div>
+                </Dialog>
+
+                <!-- Add Members Dialog -->
+                <Dialog
+                    v-model:visible="showAddMembersDialog"
+                    modal
+                    header="Add Members to Group"
+                    :style="{ width: '40rem' }"
+                    @hide="closeAddMembersDialog"
+                >
+                    <div class="mb-4">
+                        <label for="userMultiSelect" class="font-semibold block mb-2">
+                            Select Users to Add
+                        </label>
+                        <MultiSelect
+                            id="userMultiSelect"
+                            v-model="selectedUsersToAdd"
+                            :options="availableUsers.filter(user =>
+                                !groupMembers.some(member => member.user_id === user.user_id)
+                            )"
+                            optionLabel="full_name"
+                            placeholder="Select Users"
+                            display="chip"
+                            class="w-full"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            severity="secondary"
+                            @click="closeAddMembersDialog"
+                        />
+                        <Button
+                            type="button"
+                            label="Add"
+                            @click="addGroupMembers"
+                            :disabled="selectedUsersToAdd.length === 0"
                         />
                     </div>
                 </Dialog>
