@@ -66,21 +66,26 @@ sub startup ($self) {
     );
     return 0;
   });
-  $authorized->get('/api/resource/statistics')->to('SharedResource#getResourceStatistics');
+
+  # Resource
   $authorized->get('/api/resources')->to('Resource#getAllResources');
   $authorized->post('/api/resources')->to('Resource#addResource');
   $authorized->put('/api/resources/:id')->to('Resource#updateResource');
   $authorized->delete('/api/resources/:id')->to('Resource#deleteResource');
   $authorized->post('/api/resources/share')->to('Resource#shareResource');
 
+  # Shared Resource
+  $authorized->get('/api/resource/statistics')->to('SharedResource#getResourceStatistics');
   $authorized->get('/api/resources/shared')->to('SharedResource#getAllSharedResources');
   $authorized->delete('/api/resources/shared/delete')->to('SharedResource#deleteSharedResource');
 
+  # Category
   $authorized->get('/api/categories')->to('Category#getAllCategories');
   $authorized->post('/api/categories')->to('Category#addCategory');
   $authorized->put('/api/categories/:id')->to('Category#updateCategory');
   $authorized->delete('/api/categories/:id')->to('Category#deleteCategory');
 
+  # Folder
   $authorized->get('/api/folders')->to('Folder#getAllFolders');
   $authorized->get('/api/users')->to('User#getAllUsers');
   $authorized->get('/api/user/profile')->to('Setting#getUserProfile');
@@ -99,6 +104,7 @@ sub startup ($self) {
 
   # Group Member
   $authorized->get('/api/groups/:group_id/members')->to('GroupMember#getGroupMembers');
+  $authorized->post('/api/groups/:group_id/members/add')->to('GroupMember#addGroupMembers');
 }
 
 1;
