@@ -14,6 +14,7 @@
     import Tag from 'primevue/tag'
     import ConfirmDialog from 'primevue/confirmdialog'
     import Toast from 'primevue/toast'
+    import MultiSelect from 'primevue/multiselect'
 
     const confirm = useConfirm();
     const toast = useToast();
@@ -21,11 +22,13 @@
     const user = ref({})
     const groups = ref([])
     const showCreateGroupDialog = ref(false)
+    const showShareResourceDialog = ref(false)
+    const showEditGroupDialog = ref(false)
     const selectedGroup = ref(null)
+    const selectedResourcesToShare = ref([])
     const groupResources = ref([])
     const groupMembers = ref([])
-
-    const showEditGroupDialog = ref(false)
+    const userOwnedResources = ref([])
 
     const group = ref({
         name: '',
@@ -54,6 +57,16 @@
             name: '',
             description: ''
         }
+    }
+
+    const openShareResourceDialog = () => {
+        fetchUserOwnedResources();
+        showShareResourceDialog.value = true;
+    }
+
+    const closeShareResourceDialog = () => {
+        showShareResourceDialog.value = false;
+        selectedResourcesToShare.value = [];
     }
 
     const fetchUserGroups = async () => {
@@ -316,6 +329,85 @@
         }
     }
 
+    const fetchUserOwnedResources = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            userOwnedResources.value = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch owned resources:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Fetch Failed',
+                detail: 'Could not fetch your resources',
+                life: 3000
+            });
+        }
+    }
+
+    const shareResourcesWithGroup = async () => {
+        if (!selectedGroup.value || selectedResourcesToShare.value.length === 0) {
+            toast.add({
+                severity: 'warn',
+                summary: 'Invalid Selection',
+                detail: 'Please select resources to share',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/groups/resources/share', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    group_id: selectedGroup.value.group_id,
+                    resource_ids: selectedResourcesToShare.value.map(r => r.resource_id)
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Resource sharing failed');
+            }
+
+            // Refresh group resources
+            await fetchGroupDetails(selectedGroup.value.group_id);
+
+            // Reset dialog
+            showShareResourceDialog.value = false;
+            selectedResourcesToShare.value = [];
+
+            toast.add({
+                severity: 'success',
+                summary: 'Resources Shared',
+                detail: 'Resources successfully shared with the group',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to share resources:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Sharing Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
@@ -432,6 +524,13 @@
 
                     <TabView>
                         <TabPanel header="Resources">
+                            <div class="flex justify-end mb-3" v-if="selectedGroup.membership_status === 'Created'">
+                                <Button
+                                    label="Share Resources"
+                                    icon="pi pi-share-alt"
+                                    @click="openShareResourceDialog"
+                                />
+                            </div>
                             <DataTable :value="groupResources" stripedRows>
                                 <Column field="name" header="Name"></Column>
                                 <Column header="Category">
@@ -558,6 +657,45 @@
                             label="Update"
                             @click="updateGroup"
                             :disabled="!editingGroup.name"
+                        />
+                    </div>
+                </Dialog>
+
+                <!-- Share Resources Dialog -->
+                <Dialog
+                    v-model:visible="showShareResourceDialog"
+                    modal
+                    header="Share Resources with Group"
+                    :style="{ width: '40rem' }"
+                    @hide="closeShareResourceDialog"
+                >
+                    <div class="mb-4">
+                        <label for="resourceMultiSelect" class="font-semibold block mb-2">
+                            Select Resources to Share
+                        </label>
+                        <MultiSelect
+                            id="resourceMultiSelect"
+                            v-model="selectedResourcesToShare"
+                            :options="userOwnedResources"
+                            optionLabel="name"
+                            placeholder="Select Resources"
+                            display="chip"
+                            class="w-full"
+                        />
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <Button
+                            type="button"
+                            label="Cancel"
+                            severity="secondary"
+                            @click="closeShareResourceDialog"
+                        />
+                        <Button
+                            type="button"
+                            label="Share"
+                            @click="shareResourcesWithGroup"
+                            :disabled="selectedResourcesToShare.length === 0"
                         />
                     </div>
                 </Dialog>
