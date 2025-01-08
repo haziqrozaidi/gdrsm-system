@@ -15,6 +15,7 @@
     import MultiSelect from 'primevue/multiselect'
     import Tag from 'primevue/tag'
     import Toast from 'primevue/toast'
+    import Chip from 'primevue/chip'
 
     const toast = useToast()
 
@@ -23,6 +24,7 @@
     const folders = ref([])
     const user = ref({})
     const users = ref([])
+    const sharedUsers = ref([])
     const selectedUsers = ref([])
     const resourceToUpdate = ref(null)
     const resourceToDelete = ref(null)
@@ -89,6 +91,7 @@
     const openShareResourceDialog = (resource) => {
         resourceToShare.value = resource;
         selectedUsers.value = []; // Reset selected users
+        fetchSharedUsers(resource.resource_id); // Fetch currently shared users
         showShareResourceDialog.value = true;
     }
 
@@ -401,6 +404,77 @@
             users.value = allUsers.filter(u => u.email !== user.value.email);
         } catch (error) {
             console.error('Failed to fetch users:', error.message);
+        }
+    }
+
+    const fetchSharedUsers = async (resourceId) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/resources/${resourceId}/shared-users`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            sharedUsers.value = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch shared users:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to fetch shared users',
+                life: 3000
+            });
+        }
+    }
+
+    const unshareResource = async (userId) => {
+        if (!resourceToShare.value) {
+            console.error('No resource selected');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources/unshare', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resource_id: resourceToShare.value.resource_id,
+                    user_id: userId
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Unsharing failed');
+            }
+
+            // Refresh shared users list
+            await fetchSharedUsers(resourceToShare.value.resource_id);
+
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Resource Unshared Successfully',
+                life: 3000
+            });
+
+        } catch (error) {
+            console.error('Unshare resource error:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            });
         }
     }
 
@@ -735,8 +809,22 @@
                             display="chip"
                             class="flex-auto"
                             filter
+                            :maxSelectedLabels="1"
                         />
 
+                    </div>
+
+                    <div v-if="sharedUsers.length > 0" class="mb-4">
+                        <h4 class="text-md font-semibold mb-2">Currently Shared With:</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <Chip
+                                v-for="user in sharedUsers"
+                                :key="user.user_id"
+                                :label="user.email"
+                                removable
+                                @remove="unshareResource(user.user_id)"
+                            />
+                        </div>
                     </div>
 
                     <div class="flex justify-end gap-2">
