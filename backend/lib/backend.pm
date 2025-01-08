@@ -78,6 +78,8 @@ sub startup ($self) {
   $authorized->get('/api/resource/statistics')->to('SharedResource#getResourceStatistics');
   $authorized->get('/api/resources/shared')->to('SharedResource#getAllSharedResources');
   $authorized->delete('/api/resources/shared/delete')->to('SharedResource#deleteSharedResource');
+  $authorized->get('/api/resources/:resource_id/shared-users')->to('SharedResource#getSharedUsers');
+  $authorized->post('/api/resources/unshare')->to('SharedResource#unshareResource');
 
   # Category
   $authorized->get('/api/categories')->to('Category#getAllCategories');

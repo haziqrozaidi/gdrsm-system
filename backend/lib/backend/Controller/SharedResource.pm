@@ -18,7 +18,7 @@ sub getResourceStatistics {
       status => 401
     );
   }
- 
+
   # Load database configuration
   my $config = eval { LoadFile('config/database.yml') };
   if ($@) {
@@ -242,5 +242,185 @@ sub deleteSharedResource {
     status => 200
   );
 }
+
+sub getSharedUsers {
+  my $c = shift;
+  my $resource_id = $c->param('resource_id');
+
+  # Get the username from the session for authorization
+  my $username = $c->session('login_name');
+
+  unless ($username) {
+    return $c->render(
+      json => {error => 'User not authenticated'},
+      status => 401
+    );
+  }
+
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+  if ($@) {
+    return $c->render(
+      json => {error => 'Could not load database configuration'},
+      status => 500
+    );
+  }
+
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+  if ($@) {
+    return $c->render(
+      json => {error => 'Database connection failed: ' . $@},
+      status => 500
+    );
+  }
+
+  # Verify resource ownership or sharing
+  my $is_owner_or_shared = $dbh->selectrow_array(
+    'SELECT 1
+      FROM resource r
+      JOIN user u ON r.user_id = u.user_id
+      WHERE r.resource_id = ? AND (u.username = ? OR EXISTS (
+        SELECT 1
+        FROM user_resource ur
+        JOIN user sharing_user ON ur.user_id = sharing_user.user_id
+        WHERE ur.resource_id = r.resource_id AND sharing_user.username = ?
+      ))',
+    undef,
+    $resource_id,
+    $username,
+    $username
+  );
+
+  unless ($is_owner_or_shared) {
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Not authorized to view shared users'},
+      status => 403
+    );
+  }
+
+  # Query to fetch shared users
+  my $sth = $dbh->prepare(
+    'SELECT u.user_id, u.email
+      FROM user u
+      JOIN user_resource ur ON u.user_id = ur.user_id
+      WHERE ur.resource_id = ?'
+  );
+  $sth->execute($resource_id);
+
+  my $shared_users = $sth->fetchall_arrayref({});
+  $sth->finish;
+  $dbh->disconnect;
+
+  $c->render(json => $shared_users);
+}
+
+sub unshareResource {
+  my $c = shift;
+  my $resource_data = $c->req->json;
+
+  # Get the username from the session
+  my $username = $c->session('login_name');
+
+  unless ($username) {
+    return $c->render(
+      json => {error => 'User not authenticated'},
+      status => 401
+    );
+  }
+
+  # Validate input
+  unless ($resource_data->{resource_id} && $resource_data->{user_id}) {
+    return $c->render(
+      json => {error => 'Missing resource ID or user ID'},
+      status => 400
+    );
+  }
+
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+  if ($@) {
+    return $c->render(
+      json => {error => 'Could not load database configuration'},
+      status => 500
+    );
+  }
+
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+  if ($@) {
+    return $c->render(
+      json => {error => 'Database connection failed: ' . $@},
+      status => 500
+    );
+  }
+
+  # Verify resource ownership
+  my $is_owner = $dbh->selectrow_array(
+    'SELECT 1
+      FROM resource r
+      JOIN user u ON r.user_id = u.user_id
+      WHERE r.resource_id = ? AND u.username = ?',
+    undef,
+    $resource_data->{resource_id},
+    $username
+  );
+
+  unless ($is_owner) {
+    $dbh->disconnect;
+    return $c->render(
+      json => {error => 'Not authorized to unshare this resource'},
+      status => 403
+    );
+  }
+
+  # Prepare and execute unshare
+  my $sth = $dbh->prepare(
+    'DELETE FROM user_resource
+      WHERE resource_id = ? AND user_id = ?'
+  );
+  $sth->execute($resource_data->{resource_id}, $resource_data->{user_id});
+  $dbh->commit;
+
+  $dbh->disconnect;
+
+  # Check if any rows were deleted
+  if ($sth->rows == 0) {
+    return $c->render(
+      json => {error => 'Resource not shared with specified user'},
+      status => 404
+    );
+  }
+
+  # Return success response
+  $c->render(
+    json => {
+      message => 'Resource unshared successfully',
+      resource_id => $resource_data->{resource_id},
+      user_id => $resource_data->{user_id}
+    },
+    status => 200
+  );
+}
+
 
 1;
