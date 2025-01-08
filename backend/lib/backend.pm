@@ -94,6 +94,7 @@ sub startup ($self) {
 
   # Group Resource
   $authorized->get('/api/groups/:group_id/resources')->to('GroupResource#getGroupResources');
+  $authorized->post('/api/groups/resources/share')->to('GroupResource#shareResourceWithGroup');
 
   # Group Member
   $authorized->get('/api/groups/:group_id/members')->to('GroupMember#getGroupMembers');
