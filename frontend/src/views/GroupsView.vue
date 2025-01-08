@@ -562,6 +562,79 @@
         }
     }
 
+    // Add this method to your existing script setup
+    const removeGroupMember = async (userId) => {
+        if (!selectedGroup.value) {
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'No group selected',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members/remove`, {
+                method: 'DELETE',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ user_id: userId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Member removal failed');
+            }
+
+            // Refresh group members
+            await fetchGroupDetails(selectedGroup.value.group_id);
+
+            toast.add({
+                severity: 'success',
+                summary: 'Member Removed',
+                detail: 'User has been removed from the group',
+                life: 3000
+            });
+        } catch (error) {
+            console.error('Failed to remove group member:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Removal Failed',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
+    const confirmRemoveGroupMember = (userId) => {
+        confirm.require({
+            message: 'Are you sure you want to remove this member from the group?',
+            header: 'Confirm Member Removal',
+            icon: 'pi pi-exclamation-triangle',
+            rejectProps: {
+                label: 'Cancel',
+                severity: 'secondary',
+                outlined: true
+            },
+            acceptProps: {
+                label: 'Remove',
+                severity: 'danger'
+            },
+            accept: () => removeGroupMember(userId),
+            reject: () => {
+                toast.add({
+                    severity: 'info',
+                    summary: 'Cancelled',
+                    detail: 'Member removal cancelled',
+                    life: 3000
+                });
+            }
+        });
+    }
+
     const closeCreateGroupDialog = () => {
         group.value = {
             name: '',
@@ -656,7 +729,7 @@
                                     icon="pi pi-sign-out"
                                     outlined
                                     rounded
-                                    severity="warning"
+                                    severity="danger"
                                     @click="confirmLeaveGroup(data.group_id)"
                                 />
                             </template>
@@ -732,12 +805,33 @@
                                     @click="openAddMembersDialog"
                                 />
                             </div>
-                            <DataTable :value="groupMembers" stripedRows>
+                            <DataTable :value="groupMembers" stripedRows :sortField="'is_owner'" :sortOrder="-1">
                                 <Column field="full_name" header="Full Name"></Column>
                                 <Column field="role" header="Role"></Column>
                                 <Column field="email" header="Email"></Column>
                                 <Column field="username" header="Username"></Column>
                                 <Column field="date_joined" header="Joined Date"></Column>
+                                <Column header="Actions" v-if="selectedGroup.membership_status === 'Created'">
+                                    <template #body="{ data }">
+                                        <Button
+                                            v-if="!data.is_owner && data.user_id !== user.user_id"
+                                            icon="pi pi-trash"
+                                            outlined
+                                            rounded
+                                            severity="danger"
+                                            @click="confirmRemoveGroupMember(data.user_id)"
+                                            title="Remove Member from Group"
+                                        />
+                                        <Button
+                                            v-else
+                                            icon="pi pi-trash"
+                                            outlined
+                                            rounded
+                                            severity="danger"
+                                            class="invisible"
+                                        />
+                                    </template>
+                                </Column>
                             </DataTable>
                         </TabPanel>
                     </TabView>
