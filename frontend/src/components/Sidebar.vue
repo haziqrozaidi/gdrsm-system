@@ -1,9 +1,13 @@
 <script setup>
-    import Menu from 'primevue/menu';
     import { ref } from 'vue';
+    import { onMounted } from 'vue';
     import { useRouter } from 'vue-router';
+    import Menu from 'primevue/menu';
+    import Avatar from 'primevue/avatar';
 
     const router = useRouter();
+    const userName = ref('');
+    const userDescription = ref('');
 
     const logout = async () => {
         try {
@@ -92,10 +96,41 @@
             ]
         }
     ]);
+
+    onMounted(() => {
+        const userString = sessionStorage.getItem('user');
+        if (userString) {
+            try {
+                const user = JSON.parse(userString);
+                userName.value = user.login_name || 'User';
+                userDescription.value = user.description || 'Role';
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+                userName.value = 'User';
+                userDescription.value = 'Role';
+            }
+        }
+    });
 </script>
 
 <template>
     <Menu :model="items">
+        <template #start>
+            <button
+                v-ripple
+                class="relative overflow-hidden w-full border-0 bg-transparent flex items-center p-2 pl-4 hover:bg-surface-100 dark:hover:bg-surface-800 rounded-none cursor-pointer transition-colors duration-200"
+            >
+                <Avatar
+                    icon="pi pi-user"
+                    class="mr-2"
+                    shape="circle"
+                />
+                <span class="inline-flex flex-col items-start">
+                    <span class="font-bold">{{ userName }}</span>
+                    <span class="text-sm">{{ userDescription }}</span>
+                </span>
+            </button>
+        </template>
         <template #item="{ item, props }">
             <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
                 <a v-ripple :href="href" v-bind="props.action" @click="navigate">
