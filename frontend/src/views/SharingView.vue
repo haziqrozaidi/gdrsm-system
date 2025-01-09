@@ -7,6 +7,7 @@
     import Dialog from 'primevue/dialog'
     import MultiSelect from 'primevue/multiselect'
     import Sidebar from '../components/Sidebar.vue'
+    import Tag from 'primevue/tag'
 
     const filters = ref({
         'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -79,6 +80,10 @@
         }
     }
 
+    const openResourceLink = (link) => {
+        window.open(link, '_blank');
+    }
+
     onMounted(() => {
         fetchSharedResources()
     })
@@ -103,26 +108,12 @@
                     stripedRows
                 >
                     <Column field="name" header="Name"></Column>
+                    <Column header="Category">
+                        <template #body="{ data }">
+                            <Tag :value="data.category_name" severity="info" rounded />
+                        </template>
+                    </Column>
                     <Column field="description" header="Description"></Column>
-                    <Column field="link" header="Link"></Column>
-                    <Column field="session" header="Session" :showFilterMatchModes="false">
-                        <template #filter="{ filterModel }">
-                            <MultiSelect
-                                v-model="filterModel.value"
-                                :options="['2023/2024', '2024/2025', '2025/2026']"
-                                placeholder="Select Sessions"
-                            />
-                        </template>
-                    </Column>
-                    <Column field="semester" header="Semester" :showFilterMatchModes="false">
-                        <template #filter="{ filterModel }">
-                            <MultiSelect
-                                v-model="filterModel.value"
-                                :options="['1', '2', '3']"
-                                placeholder="Select Semesters"
-                            />
-                        </template>
-                    </Column>
                     <Column field="owner" header="Shared By" :showFilterMatchModes="false" :filterMenuStyle="{ width: '26rem' }">
                         <template #filter="{ filterModel }">
                             <MultiSelect
@@ -133,11 +124,34 @@
                         </template>
                     </Column>
                     <Column field="date_shared" header="Date Shared"></Column>
+                    <Column field="session" header="Session" :showFilterMatchModes="false">
+                        <template #body="{ data }">
+                            {{ data.session }}-{{ data.semester }}
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="['2023/2024-1', '2023/2024-2', '2024/2025-1', '2024/2025-2']"
+                                placeholder="Select Sessions"
+                            />
+                        </template>
+                    </Column>
                     <Column header="Actions">
                         <template #body="{ data }">
                             <Button
+                                icon="pi pi-external-link"
+                                outlined
+                                rounded
+                                severity="secondary"
+                                class="mr-2"
+                                @click="openResourceLink(data.link)"
+                                title="Open Resource Link"
+                            />
+                            <Button
                                 icon="pi pi-trash"
-                                class="p-button-danger p-button-sm"
+                                outlined
+                                rounded
+                                severity="danger"
                                 @click="openDeleteResourceDialog(data)"
                             />
                         </template>

@@ -198,12 +198,16 @@
                             <div class="flex gap-2">
                                 <Button
                                     icon="pi pi-pencil"
-                                    class="p-button-info p-button-sm"
+                                    outlined
+                                    rounded
+                                    severity="secondary"
                                     @click="openUpdateCategoryDialog(data)"
                                 />
                                 <Button
                                     icon="pi pi-trash"
-                                    class="p-button-danger p-button-sm"
+                                    outlined
+                                    rounded
+                                    severity="danger"
                                     @click="openDeleteCategoryDialog(data)"
                                 />
                             </div>

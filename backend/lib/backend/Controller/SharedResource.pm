@@ -122,13 +122,16 @@ sub getAllSharedResources {
         r.link,
         ur.date_shared,
         r.session,
-        r.semester
+        r.semester,
+        c.name AS category_name
       FROM
         resource r
       JOIN
         user_resource ur ON r.resource_id = ur.resource_id
       JOIN
         user u ON r.user_id = u.user_id
+      LEFT JOIN
+        category c ON r.category_id = c.category_id
       WHERE
         ur.user_id = (SELECT user_id FROM user WHERE username = ?)'
     );

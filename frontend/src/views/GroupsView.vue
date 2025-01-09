@@ -711,7 +711,7 @@
                                     icon="pi pi-pencil"
                                     outlined
                                     rounded
-                                    severity="info"
+                                    severity="secondary"
                                     class="mr-2"
                                     @click="openEditGroupDialog(data)"
                                 />
@@ -779,7 +779,7 @@
                                             icon="pi pi-external-link"
                                             outlined
                                             rounded
-                                            severity="info"
+                                            severity="secondary"
                                             class="mr-2"
                                             @click="openResourceLink(data.link)"
                                             title="Open Resource Link"
