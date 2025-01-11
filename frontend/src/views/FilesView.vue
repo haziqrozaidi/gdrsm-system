@@ -28,6 +28,7 @@
     const selectedUsers = ref([])
     const groups = ref([])
     const selectedGroups = ref([])
+    const sharedGroups = ref([])
     const resourceToUpdate = ref(null)
     const resourceToDelete = ref(null)
     const resourceToShare = ref(null)
@@ -95,6 +96,7 @@
         selectedUsers.value = []; // Reset selected users
         selectedGroups.value = []; // Reset selected groups
         fetchSharedUsers(resource.resource_id); // Fetch currently shared users
+        fetchSharedGroups(resource.resource_id); // Fetch currently shared groups
         fetchGroups(); // Fetch available groups
         showShareResourceDialog.value = true;
     }
@@ -466,6 +468,32 @@
         }
     }
 
+    const fetchSharedGroups = async (resourceId) => {
+        try {
+            const response = await fetch(`http://127.0.0.1:3000/api/resources/${resourceId}/shared-groups`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            sharedGroups.value = await response.json();
+        } catch (error) {
+            console.error('Failed to fetch shared groups:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to fetch shared groups',
+                life: 3000
+            });
+        }
+    }
+
     const unshareResource = async (userId) => {
         if (!resourceToShare.value) {
             console.error('No resource selected');
@@ -502,6 +530,51 @@
 
         } catch (error) {
             console.error('Unshare resource error:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: error.message,
+                life: 3000
+            });
+        }
+    }
+
+    const unshareResourceFromGroup = async (groupId) => {
+        if (!resourceToShare.value) {
+            console.error('No resource selected');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/resources/unshare-group', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    resource_id: resourceToShare.value.resource_id,
+                    group_id: groupId
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Unsharing failed');
+            }
+
+            // Refresh shared groups list
+            await fetchSharedGroups(resourceToShare.value.resource_id);
+
+            toast.add({
+                severity: 'success',
+                summary: 'Success',
+                detail: 'Resource Unshared from Group Successfully',
+                life: 3000
+            });
+
+        } catch (error) {
+            console.error('Unshare resource from group error:', error.message);
             toast.add({
                 severity: 'error',
                 summary: 'Error',
@@ -872,6 +945,19 @@
                                 :label="user.email"
                                 removable
                                 @remove="unshareResource(user.user_id)"
+                            />
+                        </div>
+                    </div>
+
+                    <div v-if="sharedGroups.length > 0" class="mb-4">
+                        <h4 class="text-md font-semibold mb-2">Currently Shared With Groups:</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <Chip
+                                v-for="group in sharedGroups"
+                                :key="group.group_id"
+                                :label="group.name"
+                                removable
+                                @remove="unshareResourceFromGroup(group.group_id)"
                             />
                         </div>
                     </div>
