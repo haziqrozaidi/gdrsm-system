@@ -427,4 +427,178 @@ sub removeResourceFromGroup {
     );
 }
 
+sub shareResourceWithGroupAndUsers {
+    my $c = shift;
+
+    # Get the username from the session
+    my $username = $c->session('login_name');
+
+    unless ($username) {
+        return $c->render(
+            json => {error => 'User not authenticated'},
+            status => 401
+        );
+    }
+
+    # Get request data
+    my $data = $c->req->json;
+    my $resource_id = $data->{resource_id};
+    my $group_ids = $data->{group_ids} || [];
+    my $user_ids = $data->{user_ids} || [];
+
+    # Validate input
+    unless ($resource_id) {
+        return $c->render(
+            json => {error => 'Resource ID is required'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Get user_id for the current user
+    my $user_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT user_id FROM user WHERE username = ?'
+        );
+        $prep->execute($username);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Fetching user_id failed: ' . $@},
+            status => 500
+        );
+    }
+
+    my $user_row = $user_sth->fetchrow_hashref;
+    $user_sth->finish;
+
+    unless ($user_row && $user_row->{user_id}) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'User not found'},
+            status => 404
+        );
+    }
+
+    my $current_user_id = $user_row->{user_id};
+
+    # Verify resource ownership
+    my $ownership_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT 1 FROM resource WHERE resource_id = ? AND user_id = ?'
+        );
+        $prep->execute($resource_id, $current_user_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource ownership check failed: ' . $@},
+            status => 500
+        );
+    }
+
+    unless ($ownership_sth->fetchrow_array) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'You do not own this resource'},
+            status => 403
+        );
+    }
+
+    # Prepare statements for sharing
+    my $group_share_sth = eval {
+        $dbh->prepare(
+            'INSERT IGNORE INTO group_resource (group_id, resource_id) VALUES (?, ?)'
+        );
+    };
+
+    my $user_share_sth = eval {
+        $dbh->prepare(
+            'INSERT IGNORE INTO user_resource (user_id, resource_id) VALUES (?, ?)'
+        );
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Prepare statement failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Track sharing results
+    my @shared_groups;
+    my @shared_users;
+
+    # Share with groups
+    eval {
+        foreach my $group_id (@$group_ids) {
+            $group_share_sth->execute($group_id, $resource_id);
+            push @shared_groups, $group_id;
+        }
+
+        # Share with individual users
+        foreach my $user_id (@$user_ids) {
+            $user_share_sth->execute($user_id, $resource_id);
+            push @shared_users, $user_id;
+        }
+
+        $dbh->commit;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Sharing failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Resource shared successfully',
+            shared_groups => \@shared_groups,
+            shared_users => \@shared_users
+        },
+        status => 200
+    );
+}
+
 1;

@@ -73,6 +73,7 @@ sub startup ($self) {
   $authorized->put('/api/resources/:id')->to('Resource#updateResource');
   $authorized->delete('/api/resources/:id')->to('Resource#deleteResource');
   $authorized->post('/api/resources/share')->to('Resource#shareResource');
+  $authorized->post('/api/resources/share-with-groups-and-users')->to('GroupResource#shareResourceWithGroupAndUsers');
 
   # Shared Resource
   $authorized->get('/api/resource/statistics')->to('SharedResource#getResourceStatistics');
@@ -107,7 +108,7 @@ sub startup ($self) {
   # Group Member
   $authorized->get('/api/groups/:group_id/members')->to('GroupMember#getGroupMembers');
   $authorized->post('/api/groups/:group_id/members/add')->to('GroupMember#addGroupMembers');
-  $r->delete('/api/groups/:group_id/members/remove')->to('GroupMember#removeGroupMember');
+  $authorized->delete('/api/groups/:group_id/members/remove')->to('GroupMember#removeGroupMember');
 }
 
 1;

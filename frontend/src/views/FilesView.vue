@@ -26,6 +26,8 @@
     const users = ref([])
     const sharedUsers = ref([])
     const selectedUsers = ref([])
+    const groups = ref([])
+    const selectedGroups = ref([])
     const resourceToUpdate = ref(null)
     const resourceToDelete = ref(null)
     const resourceToShare = ref(null)
@@ -91,7 +93,9 @@
     const openShareResourceDialog = (resource) => {
         resourceToShare.value = resource;
         selectedUsers.value = []; // Reset selected users
+        selectedGroups.value = []; // Reset selected groups
         fetchSharedUsers(resource.resource_id); // Fetch currently shared users
+        fetchGroups(); // Fetch available groups
         showShareResourceDialog.value = true;
     }
 
@@ -263,31 +267,32 @@
             return;
         }
 
-        // Log for debugging
-        console.log('Selected User IDs:', selectedUsers.value);
-        console.log('All Users:', users.value);
-
-        // The selected users are already user IDs, so no need for mapping
-        const validUserIds = selectedUsers.value.filter(id =>
-            id !== null && id !== undefined
-        );
-
-        if (validUserIds.length === 0) {
-            console.error('No valid users selected');
+        // Validate that at least one sharing option is selected
+        if (selectedUsers.value.length === 0 && selectedGroups.value.length === 0) {
+            toast.add({
+                severity: 'warn',
+                summary: 'Warning',
+                detail: 'Please select users or groups to share with',
+                life: 3000
+            });
             return;
         }
 
         try {
-            const response = await fetch('http://127.0.0.1:3000/api/resources/share', {
+            // Prepare the sharing payload
+            const sharePayload = {
+                resource_id: resourceToShare.value.resource_id,
+                user_ids: selectedUsers.value,
+                group_ids: selectedGroups.value
+            };
+
+            const response = await fetch('http://127.0.0.1:3000/api/resources/share-with-groups-and-users', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    resource_id: resourceToShare.value.resource_id,
-                    user_ids: validUserIds
-                })
+                body: JSON.stringify(sharePayload)
             });
 
             if (!response.ok) {
@@ -300,13 +305,14 @@
             showShareResourceDialog.value = false;
             resourceToShare.value = null;
             selectedUsers.value = [];
+            selectedGroups.value = [];
 
             toast.add({
                 severity: 'success',
                 summary: 'Success',
                 detail: 'Resource Shared Successfully',
                 life: 3000
-            })
+            });
 
         } catch (error) {
             console.error('Share resource error:', error.message);
@@ -315,7 +321,7 @@
                 summary: 'Error',
                 detail: error.message,
                 life: 3000
-            })
+            });
         }
     }
 
@@ -407,6 +413,33 @@
         }
     }
 
+    const fetchGroups = async () => {
+        try {
+            const response = await fetch('http://127.0.0.1:3000/api/groups', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Response status: ${response.status}`);
+            }
+
+            // Filter groups to only include those with membership_status "Created"
+            groups.value = (await response.json()).filter(group => group.membership_status === 'Created');
+        } catch (error) {
+            console.error('Failed to fetch groups:', error.message);
+            toast.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Failed to fetch groups',
+                life: 3000
+            });
+        }
+    }
+
     const fetchSharedUsers = async (resourceId) => {
         try {
             const response = await fetch(`http://127.0.0.1:3000/api/resources/${resourceId}/shared-users`, {
@@ -487,6 +520,7 @@
         fetchCategories();
         fetchFolders();
         fetchUsers();
+        fetchGroups();
 
         // Retrieve user from sessionStorage
         const userString = sessionStorage.getItem('user')
@@ -811,7 +845,22 @@
                             filter
                             :maxSelectedLabels="1"
                         />
+                    </div>
 
+                    <div class="flex items-center gap-4 mb-4">
+                        <label for="groups" class="font-semibold w-24">Select Groups</label>
+                        <MultiSelect
+                            id="groups"
+                            v-model="selectedGroups"
+                            :options="groups"
+                            optionLabel="name"
+                            optionValue="group_id"
+                            placeholder="Select Groups to Share With"
+                            display="chip"
+                            class="flex-auto"
+                            filter
+                            :maxSelectedLabels="1"
+                        />
                     </div>
 
                     <div v-if="sharedUsers.length > 0" class="mb-4">
@@ -838,7 +887,7 @@
                             type="button"
                             label="Share"
                             @click="shareResource"
-                            :disabled="selectedUsers.length === 0"
+                            :disabled="selectedUsers.length === 0 && selectedGroups.length === 0"
                         />
                     </div>
                 </Dialog>
