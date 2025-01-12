@@ -1,11 +1,11 @@
 <script setup>
-    import { ref } from 'vue';
-    import { onMounted } from 'vue';
-    import { useRouter } from 'vue-router';
+    import { ref, onMounted, computed } from 'vue';
+    import { useRouter, useRoute } from 'vue-router';
     import Menu from 'primevue/menu';
     import Avatar from 'primevue/avatar';
 
     const router = useRouter();
+    const route = useRoute();
     const userName = ref('');
     const userDescription = ref('');
 
@@ -45,11 +45,6 @@
                     route: '/files'
                 },
                 {
-                    label: 'Folders',
-                    icon: 'pi pi-folder',
-                    route: '/folders'
-                },
-                {
                     label: 'Categories',
                     icon: 'pi pi-tag',
                     route: '/categories'
@@ -63,15 +58,6 @@
                     label: 'Groups',
                     icon: 'pi pi-users',
                     route: '/groups'
-                }
-            ]
-        },
-        {
-            label: 'Documents',
-            items: [
-                {
-                    label: 'New',
-                    icon: 'pi pi-plus'
                 },
                 {
                     label: 'Search',
@@ -132,8 +118,19 @@
             </button>
         </template>
         <template #item="{ item, props }">
-            <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
-                <a v-ripple :href="href" v-bind="props.action" @click="navigate">
+            <router-link 
+                v-if="item.route" 
+                v-slot="{ href, navigate }" 
+                :to="item.route" 
+                custom
+            >
+                <a 
+                    v-ripple 
+                    :href="href" 
+                    v-bind="props.action" 
+                    @click="navigate"
+                    :class="{ 'active-menu-item': route.path === item.route }"
+                >
                     <span :class="item.icon" />
                     <span class="ml-2">{{ item.label }}</span>
                 </a>
@@ -147,4 +144,8 @@
 </template>
 
 <style scoped>
+    .active-menu-item {
+        background-color: #f1f5f9;
+        font-weight: 700;
+    }
 </style>
