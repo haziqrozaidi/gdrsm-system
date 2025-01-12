@@ -176,7 +176,10 @@
     const updateResource = async () => {
         if (!resourceToUpdate.value) return
 
-        const url = `http://127.0.0.1:3000/api/resources/${resourceToUpdate.value.resource_id}`
+        const url = user.value?.description === 'admin'
+            ? `http://127.0.0.1:3000/api/admin/resources/${resourceToUpdate.value.resource_id}`
+            : `http://127.0.0.1:3000/api/resources/${resourceToUpdate.value.resource_id}`;
+            
         try {
             const response = await fetch(url, {
                 method: 'PUT',

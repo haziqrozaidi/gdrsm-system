@@ -504,4 +504,154 @@ sub addResource {
     );
 }
 
+sub updateResource {
+    my $c = shift;
+
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $resource = $c->req->json;
+    my $resource_id = $c->stash('id');  # Get resource ID from URL
+
+    # Input validation
+    unless ($resource->{name} && $resource->{type} && $resource->{description} 
+            && $resource->{link} && $resource->{session} && $resource->{semester} 
+            && $resource->{folder} && $resource->{category}) {
+        return $c->render(
+            json => {error => 'Missing required fields'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Verify resource exists
+    my $resource_exists = $dbh->selectrow_hashref(
+        'SELECT owner FROM resource WHERE resource_id = ?',
+        undef,
+        $resource_id
+    );
+
+    unless ($resource_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found'},
+            status => 404
+        );
+    }
+
+    # Verify folder exists
+    my $folder_exists = $dbh->selectrow_array(
+        'SELECT 1 FROM folder WHERE folder_id = ?',
+        undef,
+        $resource->{folder}
+    );
+
+    unless ($folder_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Specified folder does not exist'},
+            status => 400
+        );
+    }
+
+    # Verify category exists
+    my $category_exists = $dbh->selectrow_array(
+        'SELECT 1 FROM category WHERE category_id = ?',
+        undef,
+        $resource->{category}
+    );
+
+    unless ($category_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Specified category does not exist'},
+            status => 400
+        );
+    }
+
+    # Prepare and execute update
+    my $sth = eval {
+        my $prep = $dbh->prepare(
+            'UPDATE resource
+             SET link = ?, 
+                 name = ?, 
+                 type = ?, 
+                 description = ?,
+                 session = ?, 
+                 semester = ?, 
+                 folder_id = ?, 
+                 category_id = ?
+             WHERE resource_id = ?'
+        );
+        $prep->execute(
+            $resource->{link},
+            $resource->{name},
+            $resource->{type},
+            $resource->{description},
+            $resource->{session},
+            $resource->{semester},
+            $resource->{folder},
+            $resource->{category},
+            $resource_id
+        );
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Update failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Check if any rows were updated
+    if ($sth->rows == 0) {
+        return $c->render(
+            json => {error => 'Resource update failed'},
+            status => 500
+        );
+    }
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Resource updated successfully',
+            resource_id => $resource_id
+        },
+        status => 200
+    );
+}
+
 1;
