@@ -71,16 +71,24 @@ const confirmRoleChange = async () => {
           role: newRole,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error(`Response status: ${response.status}`);
-      }
-
       await fetchUsers();
 
       // Close the dialog and reset the selected user
       showChangeRoleDialog.value = false;
       selectedUser.value = null;
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update role');
+      }
+
+      if (result.logged_out) {
+        alert('Your role has been changed to Pensyarah, and you no longer have admin privileges.');
+        router.push('/login'); // Redirect to login
+        return;
+      }
+      // Re-fetch the users list to reflect the changes
+      
 
     } catch (error) {
       console.error('Failed to change user role:', error.message);
@@ -89,6 +97,7 @@ const confirmRoleChange = async () => {
     showChangeRoleDialog.value = false;
   }
 };
+
 const openDeleteUserDialog = async (user) => {
   selectedUser.value = user;
 

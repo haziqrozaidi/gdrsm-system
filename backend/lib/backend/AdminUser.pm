@@ -145,7 +145,19 @@ sub updateUserRole {
     }
 
     $dbh->disconnect;
+    
+    # Invalidate session if the current user's role is updated
+    if ($c->session('full_name') eq $full_name && lc($new_role) eq 'pensyarah') {
+        $c->session(expires => 1); # Invalidate session
+        return $c->render(
+            json => {
+                success => 1,
+                message => 'Role updated. Current session invalidated.',
+                logged_out => 1
+            }
+        );
 
+    }
     # Return success response
     $c->render(json => {message => 'Role updated successfully'});
 }
