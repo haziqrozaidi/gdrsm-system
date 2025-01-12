@@ -62,7 +62,7 @@ sub getAllCategories {
 
 sub addCategory {
     my $c = shift;
-
+$c->session('login_name');
     # Get the category data from the request
     my $category_data = $c->req->json;
 

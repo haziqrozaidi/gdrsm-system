@@ -8,6 +8,8 @@
     const route = useRoute();
     const userName = ref('');
     const userDescription = ref('');
+    const userRole = ref(''); // Add role tracking
+
 
     const logout = async () => {
         try {
@@ -24,17 +26,19 @@
             console.error("Logout failed", error);
         }
     }
+    const items = ref([]); // Dynamically set based on user role
 
-    const items = ref([
+const configureMenuItems = () => {
+    items.value = [
         {
             label: 'Home',
             items: [
                 {
                     label: 'Dashboard',
                     icon: 'pi pi-home',
-                    route: '/dashboard'
-                }
-            ]
+                    route: '/dashboard',
+                },
+            ],
         },
         {
             label: 'Shared Resources',
@@ -42,29 +46,48 @@
                 {
                     label: 'Resources',
                     icon: 'pi pi-file',
-                    route: '/files'
+                    route: '/files',
                 },
                 {
-                    label: 'Categories',
-                    icon: 'pi pi-tag',
-                    route: '/categories'
+                    label: 'Folders',
+                    icon: 'pi pi-folder',
+                    route: '/folders',
                 },
+                // "Categories" is visible only to admins
+                ...(userDescription.value === 'admin'
+                    ? [
+                          {
+                              label: 'Categories',
+                              icon: 'pi pi-tag',
+                              route: '/categories',
+                          },
+                      ]
+                    : []),
                 {
                     label: 'Sharing',
                     icon: 'pi pi-share-alt',
-                    route: '/sharing'
+                    route: '/sharing',
                 },
                 {
                     label: 'Groups',
                     icon: 'pi pi-users',
-                    route: '/groups'
+                    route: '/groups',
+                },
+            ],
+        },
+        {
+            label: 'Documents',
+            items: [
+                {
+                    label: 'New',
+                    icon: 'pi pi-plus',
                 },
                 {
                     label: 'Search',
                     icon: 'pi pi-search',
-                    route:'/search'
-                }
-            ]
+                    route: '/search',
+                },
+            ],
         },
         {
             label: 'Profile',
@@ -72,31 +95,33 @@
                 {
                     label: 'Settings',
                     icon: 'pi pi-cog',
-                    route:'/setting'
+                    route: '/setting',
                 },
                 {
                     label: 'Logout',
                     icon: 'pi pi-sign-out',
-                    command: logout
-                }
-            ]
-        }
-    ]);
-
+                    command: logout,
+                },
+            ],
+        },
+    ];
+};
     onMounted(() => {
-        const userString = sessionStorage.getItem('user');
-        if (userString) {
-            try {
-                const user = JSON.parse(userString);
-                userName.value = user.login_name || 'User';
-                userDescription.value = user.description || 'Role';
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                userName.value = 'User';
-                userDescription.value = 'Role';
-            }
+    const userString = sessionStorage.getItem('user');
+    if (userString) {
+        try {
+            const user = JSON.parse(userString);
+            userName.value = user.login_name || 'User';
+            userDescription.value = user.description || 'Role';
+            userRole.value = user.role || ''; // Retrieve user role
+            configureMenuItems(); // Configure menu items based on role
+        } catch (error) {
+            console.error('Error parsing user data:', error);
+            userName.value = 'User';
+            userDescription.value = 'Role';
         }
-    });
+    }
+});
 </script>
 
 <template>
@@ -118,19 +143,8 @@
             </button>
         </template>
         <template #item="{ item, props }">
-            <router-link 
-                v-if="item.route" 
-                v-slot="{ href, navigate }" 
-                :to="item.route" 
-                custom
-            >
-                <a 
-                    v-ripple 
-                    :href="href" 
-                    v-bind="props.action" 
-                    @click="navigate"
-                    :class="{ 'active-menu-item': route.path === item.route }"
-                >
+            <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
+                <a v-ripple :href="href" v-bind="props.action" @click="navigate">
                     <span :class="item.icon" />
                     <span class="ml-2">{{ item.label }}</span>
                 </a>
@@ -142,6 +156,7 @@
         </template>
     </Menu>
 </template>
+
 
 <style scoped>
     .active-menu-item {

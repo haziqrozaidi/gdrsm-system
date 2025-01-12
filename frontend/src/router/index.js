@@ -1,97 +1,115 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router';
 
-import HomeView from '../views/HomeView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import LoginView from '../views/LoginView.vue'
-import DashboardView from '../views/DashboardView.vue'
-import FilesView from '../views/FilesView.vue'
-import FoldersView from '../views/FoldersView.vue'
-import SharingView from '../views/SharingView.vue'
-import SearchView from '../views/SearchView.vue'
-import SettingView from '../views/SettingView.vue'
-import CategoriesView from '../views/CategoriesView.vue'
-import GroupsView from '../views/GroupsView.vue'
+import HomeView from '../views/HomeView.vue';
+import RegisterView from '../views/RegisterView.vue';
+import LoginView from '../views/LoginView.vue';
+import DashboardView from '../views/DashboardView.vue';
+import FilesView from '../views/FilesView.vue';
+import FoldersView from '../views/FoldersView.vue';
+import SharingView from '../views/SharingView.vue';
+import SearchView from '../views/SearchView.vue';
+import SettingView from '../views/SettingView.vue';
+import CategoriesView from '../views/CategoriesView.vue';
+import GroupsView from '../views/GroupsView.vue';
 
 const routes = [
   {
     path: '/',
     name: 'home',
-    component: LoginView
+    component: LoginView,
   },
   {
     path: '/register',
     name: 'register',
-    component: RegisterView
+    component: RegisterView,
   },
   {
     path: '/login',
     name: 'login',
-    component: LoginView
+    component: LoginView,
   },
   {
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/files',
     name: 'files',
     component: FilesView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/folders',
     name: 'folders',
     component: FoldersView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/search',
     name: 'search',
     component: SearchView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/categories',
     name: 'categories',
     component: CategoriesView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, requiresRole: 'admin' }, // Restrict to admins
   },
   {
     path: '/sharing',
     name: 'sharing',
     component: SharingView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/groups',
     name: 'groups',
     component: GroupsView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true },
   },
   {
     path: '/setting',
     name: 'setting',
     component: SettingView,
-    meta: { requiresAuth: true }
-  }
-]
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/forbidden',
+    name: 'forbidden',
+    component: () => import('../views/ForbiddenView.vue'), // Display "Access Denied" message
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-})
-
-router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!sessionStorage.getItem("user");
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
-
-  if (requiresAuth && !isAuthenticated) {
-    next('/login');
-  } else {
-    next();
-  }
 });
 
-export default router
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!sessionStorage.getItem('user');
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiresRole = to.meta.requiresRole;
+
+  // Redirect unauthenticated users
+  if (requiresAuth && !isAuthenticated) {
+    return next('/login');
+  }
+
+  // If the route requires a specific role
+  if (requiresRole) {
+    const user = JSON.parse(sessionStorage.getItem('user'));
+    const userRole = user?.description;
+
+    // Redirect if the user's role does not match the required role
+    if (userRole !== requiresRole) {
+      return next('/forbidden'); // Redirect to a forbidden page
+    }
+  }
+
+  next(); // Allow navigation
+});
+
+export default router;

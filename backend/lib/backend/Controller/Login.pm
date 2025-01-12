@@ -6,6 +6,7 @@ use DBI;
 use Mojo::Base 'Mojolicious::Controller', -strict, -signatures;
 use YAML::XS 'LoadFile';
 use backend::Controller::User;
+use Mojo::Util 'md5_sum';
 
 sub login {
     my $c = shift;
@@ -66,10 +67,13 @@ sub login {
 
     # If admin user exists and password matches
     if (@$admin_rows) {
+        # Generate a unique session ID if not already set
+        my $session_id = $c->session('session_id') || md5_sum(time . rand());
         # Create a session for admin
         $c->session(
+            session_id  => $session_id,
             full_name   => $admin_rows->[0]->{full_name},
-            username    => $admin_rows->[0]->{username},
+            login_name    => $admin_rows->[0]->{username},
             email       => $admin_rows->[0]->{email},
             role        => $admin_rows->[0]->{role},
             logged_in   => 1,
@@ -80,6 +84,7 @@ sub login {
 
         return $c->render(json => {
             success     => \1,
+            session_id  => $session_id,  # Return the session ID
             full_name   => $admin_rows->[0]->{full_name},
             description => $admin_rows->[0]->{role},
             login_name  => $admin_rows->[0]->{username},
