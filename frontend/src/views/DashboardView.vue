@@ -8,6 +8,7 @@ import Sidebar from "../components/Sidebar.vue";
 const fullName = ref('');
 const totalSharedResources = ref(0);
 const userUploadedResources = ref(0);
+const activeCategory = ref(0);
 
 // Function to fetch the user object from sessionStorage
 const fetchFullNameFromSession = () => {
@@ -41,6 +42,7 @@ const fetchResourceStatistics = async () => {
         const data = await response.json();
         totalSharedResources.value = data.total_shared_resources || 0;
         userUploadedResources.value = data.user_uploaded_resources || 0;
+        activeCategory.value = data.active_category || 0;
     } catch (error) {
         console.error('Error fetching resource statistics:', error.message);
     }
@@ -48,8 +50,8 @@ const fetchResourceStatistics = async () => {
 // Fetch the full name when the component is mounted
 onMounted(() => {
     console.log('Dashboard mounted, fetching username and statistic...');
-    fetchFullNameFromSession();
-    fetchResourceStatistics();
+  fetchFullNameFromSession();
+  fetchResourceStatistics();
     console.log('Username set to:', fullName.value); // Debug log
 });
 </script>
@@ -59,13 +61,13 @@ onMounted(() => {
     <Sidebar />
     <div class="grow bg-gray-100 p-4">
       <div class="container mx-auto">
-         <!-- Show Username -->
-         <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
-                    <div class="text-lg text-gray-600">
+        <!-- Show Username -->
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <div class="text-lg text-gray-600">
                         Welcome, <span class="font-semibold text-gray-800">{{ fullName }}</span>
-                    </div>
-                </div>
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Quick Stats Cards -->
@@ -88,10 +90,10 @@ onMounted(() => {
           </Card>
 
           <Card class="shadow-md">
-            <template #title>Active Collaborations</template>
+            <template #title>Active Categories</template>
             <template #content>
-              <div class="text-3xl font-bold text-purple-600">6</div>
-              <div class="text-sm text-gray-500">Ongoing shared projects</div>
+              <div class="text-3xl font-bold text-purple-600">{{ activeCategory }}</div>
+              <div class="text-sm text-gray-500">Categories of resources</div>
             </template>
           </Card>
         </div>
