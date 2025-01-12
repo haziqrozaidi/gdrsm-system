@@ -50,8 +50,8 @@ const fetchResourceStatistics = async () => {
 // Fetch the full name when the component is mounted
 onMounted(() => {
     console.log('Dashboard mounted, fetching username and statistic...');
-    fetchFullNameFromSession();
-    fetchResourceStatistics();
+  fetchFullNameFromSession();
+  fetchResourceStatistics();
     console.log('Username set to:', fullName.value); // Debug log
 });
 </script>
@@ -61,13 +61,13 @@ onMounted(() => {
     <Sidebar />
     <div class="grow bg-gray-100 p-4">
       <div class="container mx-auto">
-         <!-- Show Username -->
-         <div class="flex justify-between items-center mb-6">
-                    <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
-                    <div class="text-lg text-gray-600">
+        <!-- Show Username -->
+        <div class="flex justify-between items-center mb-6">
+          <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
+          <div class="text-lg text-gray-600">
                         Welcome, <span class="font-semibold text-gray-800">{{ fullName }}</span>
-                    </div>
-                </div>
+          </div>
+        </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Quick Stats Cards -->
