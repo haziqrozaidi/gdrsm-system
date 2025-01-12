@@ -116,6 +116,7 @@ sub startup ($self) {
   $authorized->get('/api/admin/resources')->to('Admin#getAllResources');
   $authorized->get('/api/admin/folders')->to('Admin#getAllFolders');
   $authorized->get('/api/admin/groups')->to('Admin#getAllGroups');
+  $authorized->get('/api/admin/resources/:resource_id/shared-users')->to('Admin#getSharedUsers');
 }
 
 1;
