@@ -66,7 +66,9 @@ sub startup ($self) {
     );
     return 0;
   });
-
+  #Admin
+  $authorized->get('/api/admin/users')->to('AdminUser#fetchAllUsers');
+  $authorized->put('/api/admin/users/update-role')->to('AdminUser#updateUserRole');
   # Resource
   $authorized->get('/api/resources')->to('Resource#getAllResources');
   $authorized->post('/api/resources')->to('Resource#addResource');

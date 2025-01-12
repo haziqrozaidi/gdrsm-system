@@ -4,7 +4,7 @@
       <p class="mt-4 text-lg text-gray-700">
         You do not have permission to access this page.
       </p>
-      <router-link to="/" class="mt-6 inline-block text-blue-500 hover:underline">
+      <router-link to="/dashboard" class="mt-6 inline-block text-blue-500 hover:underline">
         Return to Home
       </router-link>
     </div>

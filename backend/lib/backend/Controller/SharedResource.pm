@@ -7,11 +7,14 @@ use Data::Dumper;
 sub getResourceStatistics {
   my $c = shift;
 
-  # Get the username and email from the session
+  # Get user information from the session
   my $username = $c->session('login_name');
   my $user_email = $c->session('email');
-    $c->app->log->debug("Session contents: " . Dumper($username));
+  my $role = $c->session('role');
 
+  $c->app->log->debug("Session contents: " . Dumper($c->session));
+
+  # Ensure the user is authenticated
   unless ($username && $user_email) {
     return $c->render(
       json => { error => 'User not authenticated' },
@@ -45,21 +48,40 @@ sub getResourceStatistics {
     );
   }
 
-  # Query total shared resources and user-uploaded resources using the email
-  my $total_shared_resources = $dbh->selectrow_array('SELECT
-        COUNT(*)
-      FROM
-        resource r
-      JOIN
-        user_resource ur ON r.resource_id = ur.resource_id
-      JOIN
-        user u ON r.user_id = u.user_id
-      WHERE
-        ur.user_id = (SELECT user_id FROM user WHERE username = ?)', undef, $username);
-  my $user_uploaded_resources = $dbh->selectrow_array(
-    "SELECT COUNT(*) FROM resource WHERE owner = ?", undef, $user_email
-  );
-  my $active_category = $dbh->selectrow_array("SELECT COUNT(*) FROM category");
+  # Initialize variables for statistics
+  my ($total_shared_resources, $user_uploaded_resources, $active_category);
+
+  if ($role && lc($role) eq 'admin') {
+    # Admin: View statistics for all users
+    $total_shared_resources = $dbh->selectrow_array(
+      'SELECT COUNT(*) FROM resource r JOIN user_resource ur ON r.resource_id = ur.resource_id'
+    );
+    $user_uploaded_resources = $dbh->selectrow_array(
+      'SELECT COUNT(*) FROM resource'
+    );
+    $active_category = $dbh->selectrow_array(
+      'SELECT COUNT(*) FROM category'
+    );
+  } else {
+    # Normal user: View own shared resources
+    $total_shared_resources = $dbh->selectrow_array(
+      'SELECT COUNT(*)
+       FROM resource r
+       JOIN user_resource ur ON r.resource_id = ur.resource_id
+       WHERE ur.user_id = (SELECT user_id FROM user WHERE username = ?)',
+      undef, $username
+    );
+    $user_uploaded_resources = $dbh->selectrow_array(
+      'SELECT COUNT(*)
+       FROM resource
+       WHERE owner = ?',
+      undef, $user_email
+    );
+    $active_category = $dbh->selectrow_array(
+      'SELECT COUNT(*) FROM category'
+    );
+  }
+
   # Return statistics as JSON
   return $c->render(
     json => {
@@ -73,12 +95,13 @@ sub getResourceStatistics {
 sub getAllSharedResources {
   my $c = shift;
 
-  # Get the username from the session
+  # Get user information from the session
   my $username = $c->session('login_name');
+  my $role = $c->session('role');
 
   unless ($username) {
     return $c->render(
-      json => {error => 'User not authenticated'},
+      json => { error => 'User not authenticated' },
       status => 401
     );
   }
@@ -88,7 +111,7 @@ sub getAllSharedResources {
 
   if ($@) {
     return $c->render(
-      json => {error => 'Could not load database configuration'},
+      json => { error => 'Could not load database configuration' },
       status => 500
     );
   }
@@ -107,19 +130,22 @@ sub getAllSharedResources {
 
   if ($@) {
     return $c->render(
-      json => {error => 'Database connection failed: ' . $@},
+      json => { error => 'Database connection failed: ' . $@ },
       status => 500
     );
   }
 
   # Prepare and execute query to get shared resources
-  my $sth = eval {
-    my $prep = $dbh->prepare(
-      'SELECT
+  my $query;
+  my @params;
+
+  if ($role && lc($role) eq 'admin') {
+    # Admin: Fetch all shared resources
+    $query = 'SELECT
         r.resource_id,
         r.name,
         r.description,
-        u.email as owner,
+        u.email AS owner,
         r.link,
         ur.date_shared,
         r.session,
@@ -132,11 +158,35 @@ sub getAllSharedResources {
       JOIN
         user u ON r.user_id = u.user_id
       LEFT JOIN
+        category c ON r.category_id = c.category_id';
+  } else {
+    # Normal user: Fetch only their own shared resources
+    $query = 'SELECT
+        r.resource_id,
+        r.name,
+        r.description,
+        u.email AS owner,
+        r.link,
+        ur.date_shared,
+        r.session,
+        r.semester,
+        c.name AS category_name
+      FROM
+        resource r
+      JOIN
+        user_resource ur ON r.resource_id = ur.resource_id
+      JOIN
+        user u ON r.user_id = ur.user_id
+      LEFT JOIN
         category c ON r.category_id = c.category_id
       WHERE
-        ur.user_id = (SELECT user_id FROM user WHERE username = ?)'
-    );
-    $prep->execute($username);
+        ur.user_id = (SELECT user_id FROM user WHERE username = ?)';
+    @params = ($username);
+  }
+
+  my $sth = eval {
+    my $prep = $dbh->prepare($query);
+    $prep->execute(@params);
     $prep;
   };
 
@@ -144,7 +194,7 @@ sub getAllSharedResources {
     $dbh->rollback;
     $dbh->disconnect;
     return $c->render(
-      json => {error => 'Fetching shared resources failed: ' . $@},
+      json => { error => 'Fetching shared resources failed: ' . $@ },
       status => 500
     );
   }

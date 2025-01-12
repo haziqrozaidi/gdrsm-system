@@ -11,6 +11,8 @@ import SearchView from '../views/SearchView.vue';
 import SettingView from '../views/SettingView.vue';
 import CategoriesView from '../views/CategoriesView.vue';
 import GroupsView from '../views/GroupsView.vue';
+import AdminManageUsers from '../views/AdminManageUsers.vue'; // Import the component
+
 
 const routes = [
   {
@@ -56,7 +58,7 @@ const routes = [
     path: '/categories',
     name: 'categories',
     component: CategoriesView,
-    meta: { requiresAuth: true, requiresRole: 'admin' }, // Restrict to admins
+    meta: { requiresAuth: true, requiresRole: 'Admin' }, // Restrict to admins
   },
   {
     path: '/sharing',
@@ -75,6 +77,12 @@ const routes = [
     name: 'setting',
     component: SettingView,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/admin/manage-users',
+    name: 'ManageUsers',
+    component: AdminManageUsers,
+    meta: { requiresAuth: true, requiresRole: 'Admin' },
   },
   {
     path: '/forbidden',

@@ -54,7 +54,7 @@ const configureMenuItems = () => {
                     route: '/folders',
                 },
                 // "Categories" is visible only to admins
-                ...(userDescription.value === 'admin'
+                ...(userDescription.value === 'Admin'
                     ? [
                           {
                               label: 'Categories',
@@ -72,7 +72,16 @@ const configureMenuItems = () => {
                     label: 'Groups',
                     icon: 'pi pi-users',
                     route: '/groups',
-                },
+                },// "Categories" is visible only to admins
+                ...(userDescription.value === 'Admin'
+                    ? [
+                          {
+                            label: 'Manage User',
+                            icon: 'pi pi-users',
+                            route: '/admin/manage-users',
+                          },
+                      ]
+                    : []),
             ],
         },
         {
@@ -112,8 +121,8 @@ const configureMenuItems = () => {
         try {
             const user = JSON.parse(userString);
             userName.value = user.login_name || 'User';
-            userDescription.value = user.description || 'Role';
-            userRole.value = user.role || ''; // Retrieve user role
+            userDescription.value = user.description || 'Description';
+            userRole.value = user.role || 'Role'; // Retrieve user role
             configureMenuItems(); // Configure menu items based on role
         } catch (error) {
             console.error('Error parsing user data:', error);
@@ -144,7 +153,7 @@ const configureMenuItems = () => {
         </template>
         <template #item="{ item, props }">
             <router-link v-if="item.route" v-slot="{ href, navigate }" :to="item.route" custom>
-                <a v-ripple :href="href" v-bind="props.action" @click="navigate">
+                <a v-ripple :href="href" v-bind="props.action" @click="navigate" :class="{ 'active-menu-item': route.path === item.route }">
                     <span :class="item.icon" />
                     <span class="ml-2">{{ item.label }}</span>
                 </a>
