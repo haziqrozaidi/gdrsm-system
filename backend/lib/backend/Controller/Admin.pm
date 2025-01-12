@@ -654,4 +654,104 @@ sub updateResource {
     );
 }
 
+sub deleteResource {
+    my $c = shift;
+
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $resource_id = $c->stash('id');  # Get resource ID from URL
+
+    unless ($resource_id) {
+        return $c->render(
+            json => {error => 'Missing resource ID'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # First, check if the resource exists
+    my $resource_exists = $dbh->selectrow_hashref(
+        'SELECT resource_id, name, owner FROM resource WHERE resource_id = ?',
+        undef,
+        $resource_id
+    );
+
+    unless ($resource_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found'},
+            status => 404
+        );
+    }
+
+    # Prepare and execute delete
+    my $sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM resource WHERE resource_id = ?'
+        );
+        $prep->execute($resource_id);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Delete failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Check if any rows were deleted
+    if ($sth->rows == 0) {
+        return $c->render(
+            json => {error => 'Resource deletion failed'},
+            status => 500
+        );
+    }
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Resource deleted successfully',
+            resource_id => $resource_id,
+            resource_name => $resource_exists->{name},
+            original_owner => $resource_exists->{owner},
+            deleted_by => $username
+        },
+        status => 200
+    );
+}
+
 1;

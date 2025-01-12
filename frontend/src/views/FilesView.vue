@@ -233,7 +233,10 @@
     const deleteResource = async () => {
         if (!resourceToDelete.value) return
 
-        const url = `http://127.0.0.1:3000/api/resources/${resourceToDelete.value.resource_id}`
+        const url = user.value.description === 'admin'
+            ? `http://127.0.0.1:3000/api/admin/resources/${resourceToDelete.value.resource_id}`
+            : `http://127.0.0.1:3000/api/resources/${resourceToDelete.value.resource_id}`;
+
         try {
             const response = await fetch(url, {
                 method: 'DELETE',

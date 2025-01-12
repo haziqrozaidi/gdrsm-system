@@ -120,6 +120,7 @@ sub startup ($self) {
   $authorized->get('/api/admin/resources/:resource_id/shared-groups')->to('Admin#getSharedGroups');
   $authorized->post('/api/admin/resources')->to('Admin#addResource');
   $authorized->put('/api/admin/resources/:id')->to('Admin#updateResource');
+  $authorized->delete('/api/admin/resources/:id')->to('Admin#deleteResource');
 }
 
 1;
