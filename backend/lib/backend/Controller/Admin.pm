@@ -267,4 +267,76 @@ sub getSharedUsers {
     $c->render(json => $shared_users);
 }
 
+sub getSharedGroups {
+    my $c = shift;
+    my $resource_id = $c->param('resource_id');
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Verify resource exists
+    my $resource_exists = $dbh->selectrow_array(
+        'SELECT 1 FROM resource WHERE resource_id = ?',
+        undef,
+        $resource_id
+    );
+
+    unless ($resource_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found'},
+            status => 404
+        );
+    }
+
+    # Query to fetch shared groups with additional details
+    my $sth = $dbh->prepare(
+        'SELECT 
+            ug.group_id, 
+            ug.name, 
+            ug.description,
+            r.name AS resource_name,
+            r.owner AS resource_owner,
+            gr.date_shared,
+            (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = ug.group_id) AS member_count,
+            u.email AS group_owner_email
+        FROM user_group ug
+        JOIN group_resource gr ON ug.group_id = gr.group_id
+        JOIN resource r ON gr.resource_id = r.resource_id
+        JOIN user u ON ug.user_id = u.user_id
+        WHERE gr.resource_id = ?'
+    );
+    $sth->execute($resource_id);
+
+    my $shared_groups = $sth->fetchall_arrayref({});
+    $sth->finish;
+    $dbh->disconnect;
+
+    $c->render(json => $shared_groups);
+}
+
 1;

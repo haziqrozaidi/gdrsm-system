@@ -482,8 +482,12 @@
     }
 
     const fetchSharedGroups = async (resourceId) => {
+        const url = user.value?.description === 'admin'
+            ? `http://127.0.0.1:3000/api/admin/resources/${resourceId}/shared-groups`
+            : `http://127.0.0.1:3000/api/resources/${resourceId}/shared-groups`;
+
         try {
-            const response = await fetch(`http://127.0.0.1:3000/api/resources/${resourceId}/shared-groups`, {
+            const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
