@@ -69,6 +69,8 @@ sub startup ($self) {
   #Admin
   $authorized->get('/api/admin/users')->to('AdminUser#fetchAllUsers');
   $authorized->put('/api/admin/users/update-role')->to('AdminUser#updateUserRole');
+  $authorized->delete('/api/admin/users/delete')->to('AdminUser#deleteUser');
+  $authorized->post('/api/admin/users/check-dependencies')->to('AdminUser#checkUserDependencies');
   # Resource
   $authorized->get('/api/resources')->to('Resource#getAllResources');
   $authorized->post('/api/resources')->to('Resource#addResource');
