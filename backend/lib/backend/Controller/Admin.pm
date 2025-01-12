@@ -859,4 +859,135 @@ sub unshareResource {
     );
 }
 
+sub unshareResourceFromGroup {
+    my $c = shift;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+
+    # Get request data
+    my $data = $c->req->json;
+    my $resource_id = $data->{resource_id};
+    my $group_id = $data->{group_id};
+
+    # Validate input
+    unless ($resource_id && $group_id) {
+        return $c->render(
+            json => {error => 'Resource ID and Group ID are required'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Verify resource exists
+    my $resource_exists = $dbh->selectrow_hashref(
+        'SELECT resource_id, name, owner FROM resource WHERE resource_id = ?',
+        undef,
+        $resource_id
+    );
+
+    unless ($resource_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found'},
+            status => 404
+        );
+    }
+
+    # Verify group exists
+    my $group_exists = $dbh->selectrow_hashref(
+        'SELECT group_id, name FROM user_group WHERE group_id = ?',
+        undef,
+        $group_id
+    );
+
+    unless ($group_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Group not found'},
+            status => 404
+        );
+    }
+
+    # Check if resource is shared with the group
+    my $is_shared = $dbh->selectrow_array(
+        'SELECT 1 FROM group_resource WHERE resource_id = ? AND group_id = ?',
+        undef,
+        $resource_id,
+        $group_id
+    );
+
+    unless ($is_shared) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not shared with the group'},
+            status => 404
+        );
+    }
+
+    # Remove resource from group
+    my $unshare_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM group_resource 
+             WHERE resource_id = ? AND group_id = ?'
+        );
+        $prep->execute($resource_id, $group_id);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Unsharing failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Resource unshared from group successfully',
+            resource_id => $resource_id,
+            resource_name => $resource_exists->{name},
+            group_id => $group_id,
+            group_name => $group_exists->{name},
+            unshared_by => $username
+        },
+        status => 200
+    );
+}
+
 1;

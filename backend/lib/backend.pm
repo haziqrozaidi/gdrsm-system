@@ -122,6 +122,7 @@ sub startup ($self) {
   $authorized->put('/api/admin/resources/:id')->to('Admin#updateResource');
   $authorized->delete('/api/admin/resources/:id')->to('Admin#deleteResource');
   $authorized->post('/api/admin/resources/unshare')->to('Admin#unshareResource');
+  $authorized->post('/api/admin/resources/unshare-group')->to('Admin#unshareResourceFromGroup');
 }
 
 1;
