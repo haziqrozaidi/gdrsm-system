@@ -754,4 +754,109 @@ sub deleteResource {
     );
 }
 
+sub unshareResource {
+    my $c = shift;
+    my $resource_data = $c->req->json;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+
+    # Validate input
+    unless ($resource_data->{resource_id} && $resource_data->{user_id}) {
+        return $c->render(
+            json => {error => 'Missing resource ID or user ID'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Verify resource exists
+    my $resource_exists = $dbh->selectrow_hashref(
+        'SELECT resource_id, name, owner FROM resource WHERE resource_id = ?',
+        undef,
+        $resource_data->{resource_id}
+    );
+
+    unless ($resource_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found'},
+            status => 404
+        );
+    }
+
+    # Verify user exists
+    my $user_exists = $dbh->selectrow_hashref(
+        'SELECT user_id, username FROM user WHERE user_id = ?',
+        undef,
+        $resource_data->{user_id}
+    );
+
+    unless ($user_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'User not found'},
+            status => 404
+        );
+    }
+
+    # Prepare and execute unshare
+    my $sth = $dbh->prepare(
+        'DELETE FROM user_resource
+          WHERE resource_id = ? AND user_id = ?'
+    );
+    $sth->execute($resource_data->{resource_id}, $resource_data->{user_id});
+    $dbh->commit;
+
+    $dbh->disconnect;
+
+    # Check if any rows were deleted
+    if ($sth->rows == 0) {
+        return $c->render(
+            json => {error => 'Resource not shared with specified user'},
+            status => 404
+        );
+    }
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Resource unshared successfully',
+            resource_id => $resource_data->{resource_id},
+            resource_name => $resource_exists->{name},
+            user_id => $resource_data->{user_id},
+            username => $user_exists->{username},
+            unshared_by => $username
+        },
+        status => 200
+    );
+}
+
 1;

@@ -121,6 +121,7 @@ sub startup ($self) {
   $authorized->post('/api/admin/resources')->to('Admin#addResource');
   $authorized->put('/api/admin/resources/:id')->to('Admin#updateResource');
   $authorized->delete('/api/admin/resources/:id')->to('Admin#deleteResource');
+  $authorized->post('/api/admin/resources/unshare')->to('Admin#unshareResource');
 }
 
 1;

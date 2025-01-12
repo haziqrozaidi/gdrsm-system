@@ -527,7 +527,11 @@
         }
 
         try {
-            const response = await fetch('http://127.0.0.1:3000/api/resources/unshare', {
+            const url = user.value?.description === 'admin'
+                ? 'http://127.0.0.1:3000/api/admin/resources/unshare'
+                : 'http://127.0.0.1:3000/api/resources/unshare';
+
+            const response = await fetch(url, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
