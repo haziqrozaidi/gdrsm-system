@@ -59,12 +59,13 @@ sub getResourceStatistics {
   my $user_uploaded_resources = $dbh->selectrow_array(
     "SELECT COUNT(*) FROM resource WHERE owner = ?", undef, $user_email
   );
-
+  my $active_category = $dbh->selectrow_array("SELECT COUNT(*) FROM category");
   # Return statistics as JSON
   return $c->render(
     json => {
       total_shared_resources => $total_shared_resources || 0,
       user_uploaded_resources => $user_uploaded_resources || 0,
+      active_category => $active_category || 0,
     }
   );
 }

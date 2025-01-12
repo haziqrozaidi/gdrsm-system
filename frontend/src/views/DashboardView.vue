@@ -8,6 +8,7 @@ import Sidebar from "../components/Sidebar.vue";
 const fullName = ref('');
 const totalSharedResources = ref(0);
 const userUploadedResources = ref(0);
+const activeCategory = ref(0);
 
 // Function to fetch the user object from sessionStorage
 const fetchFullNameFromSession = () => {
@@ -41,6 +42,7 @@ const fetchResourceStatistics = async () => {
         const data = await response.json();
         totalSharedResources.value = data.total_shared_resources || 0;
         userUploadedResources.value = data.user_uploaded_resources || 0;
+        activeCategory.value = data.active_category || 0;
     } catch (error) {
         console.error('Error fetching resource statistics:', error.message);
     }
@@ -88,10 +90,10 @@ onMounted(() => {
           </Card>
 
           <Card class="shadow-md">
-            <template #title>Active Collaborations</template>
+            <template #title>Active Categories</template>
             <template #content>
-              <div class="text-3xl font-bold text-purple-600">6</div>
-              <div class="text-sm text-gray-500">Ongoing shared projects</div>
+              <div class="text-3xl font-bold text-purple-600">{{ activeCategory }}</div>
+              <div class="text-sm text-gray-500">Categories of resources</div>
             </template>
           </Card>
         </div>
