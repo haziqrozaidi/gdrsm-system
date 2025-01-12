@@ -328,7 +328,10 @@
     }
 
     const fetchResources = async () => {
-        const url = 'http://127.0.0.1:3000/api/resources';
+        const url = user.value.description === 'admin' 
+            ? 'http://127.0.0.1:3000/api/admin/resources'
+            : 'http://127.0.0.1:3000/api/resources';
+
         try {
             const response = await fetch(url, {
                 method: 'GET',
@@ -589,12 +592,6 @@
     }
 
     onMounted(() => {
-        fetchResources();
-        fetchCategories();
-        fetchFolders();
-        fetchUsers();
-        fetchGroups();
-
         // Retrieve user from sessionStorage
         const userString = sessionStorage.getItem('user')
 
@@ -606,6 +603,12 @@
                 console.error('Error parsing user from sessionStorage:', error)
             }
         }
+
+        fetchResources();
+        fetchCategories();
+        fetchFolders();
+        fetchUsers();
+        fetchGroups();
     })
 </script>
 

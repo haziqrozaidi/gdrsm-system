@@ -111,6 +111,9 @@ sub startup ($self) {
   $authorized->get('/api/groups/:group_id/members')->to('GroupMember#getGroupMembers');
   $authorized->post('/api/groups/:group_id/members/add')->to('GroupMember#addGroupMembers');
   $authorized->delete('/api/groups/:group_id/members/remove')->to('GroupMember#removeGroupMember');
+
+  # Admin
+  $authorized->get('/api/admin/resources')->to('Admin#getAllResources');
 }
 
 1;
