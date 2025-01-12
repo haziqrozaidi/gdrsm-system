@@ -990,4 +990,186 @@ sub unshareResourceFromGroup {
     );
 }
 
+sub shareResourceWithGroupAndUsers {
+    my $c = shift;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+
+    # Get request data
+    my $data = $c->req->json;
+    my $resource_id = $data->{resource_id};
+    my $group_ids = $data->{group_ids} || [];
+    my $user_ids = $data->{user_ids} || [];
+    my $owner = $data->{owner};  # Optional: specify resource owner
+
+    # Validate input
+    unless ($resource_id) {
+        return $c->render(
+            json => {error => 'Resource ID is required'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Verify resource exists
+    my $resource = $dbh->selectrow_hashref(
+        'SELECT resource_id, name, user_id, owner FROM resource WHERE resource_id = ?',
+        undef,
+        $resource_id
+    );
+
+    unless ($resource) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found'},
+            status => 404
+        );
+    }
+
+    # Determine the owner's user_id
+    my $owner_user_id;
+    my $owner_username;
+
+    if ($owner) {
+        # If owner is specified, validate and get their user_id
+        my $owner_details = $dbh->selectrow_hashref(
+            'SELECT user_id, username FROM user WHERE username = ?',
+            undef,
+            $owner
+        );
+
+        unless ($owner_details) {
+            $dbh->disconnect;
+            return $c->render(
+                json => {error => 'Specified owner not found'},
+                status => 404
+            );
+        }
+
+        $owner_user_id = $owner_details->{user_id};
+        $owner_username = $owner_details->{username};
+    } else {
+        # If no owner specified, use the current resource's owner
+        $owner_user_id = $resource->{user_id};
+        $owner_username = $resource->{owner};
+    }
+
+    # Prepare statements for sharing
+    my $group_share_sth = $dbh->prepare(
+        'INSERT IGNORE INTO group_resource (group_id, resource_id) VALUES (?, ?)'
+    );
+
+    my $user_share_sth = $dbh->prepare(
+        'INSERT IGNORE INTO user_resource (user_id, resource_id) VALUES (?, ?)'
+    );
+
+    # Track sharing results
+    my @shared_groups;
+    my @shared_users;
+    my @invalid_groups;
+    my @invalid_users;
+
+    # Validate groups
+    my %valid_groups;
+    if (@$group_ids) {
+        my $groups_validation = $dbh->selectall_arrayref(
+            'SELECT group_id FROM user_group WHERE group_id IN (' . 
+            join(',', map { $dbh->quote($_) } @$group_ids) . ')'
+        );
+        %valid_groups = map { $_->[0] => 1 } @$groups_validation;
+    }
+
+    # Validate users
+    my %valid_users;
+    if (@$user_ids) {
+        my $users_validation = $dbh->selectall_arrayref(
+            'SELECT user_id FROM user WHERE user_id IN (' . 
+            join(',', map { $dbh->quote($_) } @$user_ids) . ')'
+        );
+        %valid_users = map { $_->[0] => 1 } @$users_validation;
+    }
+
+    # Share with groups
+    foreach my $group_id (@$group_ids) {
+        if ($valid_groups{$group_id}) {
+            $group_share_sth->execute($group_id, $resource_id);
+            push @shared_groups, $group_id;
+        } else {
+            push @invalid_groups, $group_id;
+        }
+    }
+
+    # Share with individual users
+    foreach my $user_id (@$user_ids) {
+        if ($valid_users{$user_id}) {
+            $user_share_sth->execute($user_id, $resource_id);
+            push @shared_users, $user_id;
+        } else {
+            push @invalid_users, $user_id;
+        }
+    }
+
+    eval { $dbh->commit; };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Sharing failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return comprehensive response
+    $c->render(
+        json => {
+            message => 'Resource shared successfully',
+            resource_id => $resource_id,
+            resource_name => $resource->{name},
+            owner => $owner_username,
+            shared_groups => \@shared_groups,
+            shared_users => \@shared_users,
+            invalid_groups => \@invalid_groups,
+            invalid_users => \@invalid_users,
+            shared_by => $username
+        },
+        status => 200
+    );
+}
+
+
+
+
 1;

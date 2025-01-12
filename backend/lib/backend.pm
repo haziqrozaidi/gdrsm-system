@@ -123,6 +123,7 @@ sub startup ($self) {
   $authorized->delete('/api/admin/resources/:id')->to('Admin#deleteResource');
   $authorized->post('/api/admin/resources/unshare')->to('Admin#unshareResource');
   $authorized->post('/api/admin/resources/unshare-group')->to('Admin#unshareResourceFromGroup');
+  $authorized->post('/api/admin/resources/share-with-groups-and-users')->to('Admin#shareResourceWithGroupAndUsers');
 }
 
 1;

@@ -297,7 +297,11 @@
                 group_ids: selectedGroups.value
             };
 
-            const response = await fetch('http://127.0.0.1:3000/api/resources/share-with-groups-and-users', {
+            const url = user.value?.description === 'admin'
+                ? 'http://127.0.0.1:3000/api/admin/resources/share-with-groups-and-users'
+                : 'http://127.0.0.1:3000/api/resources/share-with-groups-and-users';
+
+            const response = await fetch(url, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -663,6 +667,7 @@
                     :globalFilterFields="['type', 'session', 'semester']"
                     :value="resources"
                     stripedRows
+                    paginator :rows="5" :rowsPerPageOptions="[5, 10, 20, 50]"
                 >
                     <Column field="name" header="Name"></Column>
                     <Column header="Category">
