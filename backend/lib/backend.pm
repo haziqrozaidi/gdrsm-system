@@ -118,6 +118,7 @@ sub startup ($self) {
   $authorized->get('/api/admin/groups')->to('Admin#getAllGroups');
   $authorized->get('/api/admin/resources/:resource_id/shared-users')->to('Admin#getSharedUsers');
   $authorized->get('/api/admin/resources/:resource_id/shared-groups')->to('Admin#getSharedGroups');
+  $authorized->post('/api/admin/resources')->to('Admin#addResource');
 }
 
 1;

@@ -118,9 +118,12 @@
     }
 
     const addResource = async () => {
-        const url = 'http://127.0.0.1:3000/api/resources';
+        const url = user.value?.description === 'admin'
+        ? 'http://127.0.0.1:3000/api/admin/resources'
+        : 'http://127.0.0.1:3000/api/resources';
+
         try {
-            const response = await fetch('http://127.0.0.1:3000/api/resources', {
+            const response = await fetch(url, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {

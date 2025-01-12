@@ -339,4 +339,169 @@ sub getSharedGroups {
     $c->render(json => $shared_groups);
 }
 
+sub addResource {
+    my $c = shift;
+
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $resource = $c->req->json;
+    my $email = $c->session('email');
+
+    # Input validation with additional checks for admin
+    unless ($resource->{name} && $resource->{type} && $resource->{description} 
+            && $resource->{link} && $resource->{session} && $resource->{semester} 
+            && $resource->{folder} && $resource->{category} && $resource->{owner}) {
+        return $c->render(
+            json => {error => 'Missing required fields'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Verify owner user exists
+    my $owner_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT user_id FROM user WHERE email = ?'
+        );
+        $prep->execute($resource->{owner});
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Fetching owner user_id failed: ' . $@},
+            status => 500
+        );
+    }
+
+    my $owner_row = $owner_sth->fetchrow_hashref;
+    $owner_sth->finish;
+
+    unless ($owner_row && $owner_row->{user_id}) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Owner user not found'},
+            status => 404
+        );
+    }
+
+    my $owner_id = $owner_row->{user_id};
+
+    # Verify folder exists
+    my $folder_exists = $dbh->selectrow_array(
+        'SELECT 1 FROM folder WHERE folder_id = ?',
+        undef,
+        $resource->{folder}
+    );
+
+    unless ($folder_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Specified folder does not exist'},
+            status => 400
+        );
+    }
+
+    # Verify category exists
+    my $category_exists = $dbh->selectrow_array(
+        'SELECT 1 FROM category WHERE category_id = ?',
+        undef,
+        $resource->{category}
+    );
+
+    unless ($category_exists) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Specified category does not exist'},
+            status => 400
+        );
+    }
+
+    # Prepare and execute insert
+    my $sth = eval {
+        my $prep = $dbh->prepare(
+            'INSERT INTO resource (
+                link, 
+                name, 
+                type, 
+                description, 
+                owner, 
+                session, 
+                semester, 
+                user_id, 
+                folder_id, 
+                category_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $prep->execute(
+            $resource->{link},
+            $resource->{name},
+            $resource->{type},
+            $resource->{description},
+            $resource->{owner},
+            $resource->{session},
+            $resource->{semester},
+            $owner_id,
+            $resource->{folder},
+            $resource->{category}
+        );
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Saving failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Get the ID of the newly inserted resource
+    my $new_resource_id = $dbh->last_insert_id(undef, undef, 'resource', 'resource_id');
+
+    $dbh->disconnect;
+
+    # Return success response with new resource details
+    $c->render(
+        json => {
+            message => 'Resource saved successfully',
+            resource_id => $new_resource_id,
+            created_by => $username
+        },
+        status => 201
+    );
+}
+
 1;
