@@ -114,6 +114,7 @@ sub startup ($self) {
 
   # Admin
   $authorized->get('/api/admin/resources')->to('Admin#getAllResources');
+  $authorized->get('/api/admin/folders')->to('Admin#getAllFolders');
 }
 
 1;

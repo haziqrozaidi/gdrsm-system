@@ -374,7 +374,9 @@
     }
 
     const fetchFolders = async () => {
-        const url = 'http://127.0.0.1:3000/api/folders';
+        const url = user.value.description === 'admin' 
+            ? 'http://127.0.0.1:3000/api/admin/folders'
+            : 'http://127.0.0.1:3000/api/folders';
 
         try {
             const response = await fetch(url, {
