@@ -125,6 +125,7 @@ sub startup ($self) {
   $authorized->post('/api/admin/resources/unshare-group')->to('Admin#unshareResourceFromGroup');
   $authorized->post('/api/admin/resources/share-with-groups-and-users')->to('Admin#shareResourceWithGroupAndUsers');
   $authorized->put('/api/admin/groups/:group_id')->to('Admin#updateGroup');
+  $authorized->delete('/api/admin/groups/:group_id')->to('Admin#deleteGroup');
 }
 
 1;

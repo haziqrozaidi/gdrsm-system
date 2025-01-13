@@ -1294,4 +1294,139 @@ sub updateGroup {
     );
 }
 
+sub deleteGroup {
+    my $c = shift;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $group_id = $c->stash('group_id');
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Get group details before deletion
+    my $group_details_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT name, description, user_id FROM user_group WHERE group_id = ?'
+        );
+        $prep->execute($group_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Fetching group details failed: ' . $@},
+            status => 500
+        );
+    }
+
+    my $group_details = $group_details_sth->fetchrow_hashref;
+
+    unless ($group_details) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Group not found'},
+            status => 404
+        );
+    }
+
+    # Delete group resources first (to handle foreign key constraints)
+    my $delete_resources_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE gr FROM group_resource gr
+             JOIN resource r ON gr.resource_id = r.resource_id
+             WHERE gr.group_id = ?'
+        );
+        $prep->execute($group_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Deleting group resources failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Delete group members
+    my $delete_members_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM group_members WHERE group_id = ?'
+        );
+        $prep->execute($group_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Deleting group members failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Delete the group itself
+    my $delete_group_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM user_group WHERE group_id = ?'
+        );
+        $prep->execute($group_id);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Group deletion failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Group successfully deleted by admin',
+            group_id => $group_id,
+            group_name => $group_details->{name},
+            deleted_by => $username
+        },
+        status => 200
+    );
+}
+
 1;
