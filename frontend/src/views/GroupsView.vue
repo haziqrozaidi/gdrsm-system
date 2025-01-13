@@ -110,7 +110,11 @@
     const fetchGroupDetails = async (groupId) => {
         try {
             // Fetch group resources
-            const resourcesResponse = await fetch(`http://127.0.0.1:3000/api/groups/${groupId}/resources`, {
+            const url = user.value?.description === 'admin'
+                ? `http://127.0.0.1:3000/api/admin/groups/${groupId}/resources`
+                : `http://127.0.0.1:3000/api/groups/${groupId}/resources`;
+
+            const resourcesResponse = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
