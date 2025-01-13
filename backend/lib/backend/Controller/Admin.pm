@@ -1695,4 +1695,118 @@ sub removeGroupMember {
     );
 }
 
+sub addGroupMembers {
+    my $c = shift;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $group_id = $c->stash('group_id');
+
+    # Get request data
+    my $data = $c->req->json;
+    my $user_ids = $data->{user_ids};
+
+    # Validate input
+    unless ($group_id && $user_ids && ref($user_ids) eq 'ARRAY' && scalar @$user_ids > 0) {
+        return $c->render(
+            json => {error => 'Group ID and at least one user ID are required'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Prepare to insert new group members
+    my $insert_sth = eval {
+        $dbh->prepare(
+            'INSERT IGNORE INTO group_members (group_id, user_id)
+             VALUES (?, ?)'
+        );
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Prepare statement failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Track successfully added and already existing members
+    my @added_users;
+    my @existing_users;
+
+    # Add users to the group
+    eval {
+        for my $user_id (@$user_ids) {
+            # Check if user is already in the group
+            my $check_sth = $dbh->prepare(
+                'SELECT 1 FROM group_members WHERE group_id = ? AND user_id = ?'
+            );
+            $check_sth->execute($group_id, $user_id);
+
+            if ($check_sth->fetchrow_array) {
+                push @existing_users, $user_id;
+                next;
+            }
+
+            # Insert user into the group
+            $insert_sth->execute($group_id, $user_id);
+            push @added_users, $user_id;
+        }
+
+        $dbh->commit;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Adding members failed: ' . $@},
+            status => 500
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Members added successfully by admin',
+            added_users => \@added_users,
+            existing_users => \@existing_users,
+            added_by => $username
+        },
+        status => 200
+    );
+}
+
 1;
