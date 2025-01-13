@@ -445,7 +445,7 @@
         try {
             const url = user.value?.description === 'admin'
                 ? `http://127.0.0.1:3000/api/admin/groups/${selectedGroup.value.group_id}/resources`
-                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/resources`;
+                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/resources/delete`;
 
             const response = await fetch(url, {
                 method: 'DELETE',
@@ -547,7 +547,7 @@
         try {
             const url = user.value?.description === 'admin'
                 ? `http://127.0.0.1:3000/api/admin/groups/${selectedGroup.value.group_id}/members`
-                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members`;
+                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members/add`;
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -603,7 +603,7 @@
         try {
             const url = user.value?.description === 'admin'
                 ? `http://127.0.0.1:3000/api/admin/groups/${selectedGroup.value.group_id}/members`
-                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members`;
+                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members/remove`;
 
             const response = await fetch(url, {
                 method: 'DELETE',
