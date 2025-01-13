@@ -1579,4 +1579,120 @@ sub getGroupMembers {
     $c->render(json => $members);
 }
 
+sub removeGroupMember {
+    my $c = shift;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $group_id = $c->stash('group_id');
+
+    # Get request data
+    my $data = $c->req->json;
+    my $user_id_to_remove = $data->{user_id};
+
+    # Validate input
+    unless ($group_id && $user_id_to_remove) {
+        return $c->render(
+            json => {error => 'Group ID and User ID are required'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Prevent removing the group owner
+    my $owner_removal_check_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT 1 FROM user_group WHERE group_id = ? AND user_id = ?'
+        );
+        $prep->execute($group_id, $user_id_to_remove);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Owner check failed: ' . $@},
+            status => 500
+        );
+    }
+
+    if ($owner_removal_check_sth->fetchrow_array) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Cannot remove the group owner'},
+            status => 403
+        );
+    }
+
+    # Remove the member from the group
+    my $remove_member_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM group_members WHERE group_id = ? AND user_id = ?'
+        );
+        $prep->execute($group_id, $user_id_to_remove);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Member removal failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Check if any rows were deleted
+    if ($remove_member_sth->rows == 0) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'User was not a member of this group'},
+            status => 404
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Member successfully removed by admin',
+            user_id => $user_id_to_remove,
+            group_id => $group_id,
+            removed_by => $username
+        },
+        status => 200
+    );
+}
+
 1;

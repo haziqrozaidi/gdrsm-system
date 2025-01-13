@@ -581,7 +581,6 @@
         }
     }
 
-    // Add this method to your existing script setup
     const removeGroupMember = async (userId) => {
         if (!selectedGroup.value) {
             toast.add({
@@ -594,7 +593,11 @@
         }
 
         try {
-            const response = await fetch(`http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members/remove`, {
+            const url = user.value?.description === 'admin'
+                ? `http://127.0.0.1:3000/api/admin/groups/${selectedGroup.value.group_id}/members`
+                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/members`;
+
+            const response = await fetch(url, {
                 method: 'DELETE',
                 credentials: 'include',
                 headers: {
