@@ -8,6 +8,7 @@
     const route = useRoute();
     const userName = ref('');
     const userDescription = ref('');
+    const isAdmin = ref(false);
 
     const logout = async () => {
         try {
@@ -45,11 +46,6 @@
                     route: '/files'
                 },
                 {
-                    label: 'Categories',
-                    icon: 'pi pi-tag',
-                    route: '/categories'
-                },
-                {
                     label: 'Sharing',
                     icon: 'pi pi-share-alt',
                     route: '/sharing'
@@ -83,6 +79,63 @@
         }
     ]);
 
+    const adminItems = ref([
+        {
+            label: 'Home',
+            items: [
+                {
+                    label: 'Dashboard',
+                    icon: 'pi pi-home',
+                    route: '/dashboard'
+                }
+            ]
+        },
+        {
+            label: 'Shared Resources',
+            items: [
+                {
+                    label: 'Resources',
+                    icon: 'pi pi-file',
+                    route: '/files'
+                },
+                {
+                    label: 'Categories',
+                    icon: 'pi pi-tag',
+                    route: '/categories'
+                },
+                {
+                    label: 'Groups',
+                    icon: 'pi pi-users',
+                    route: '/groups'
+                },
+                {
+                    label: 'Search',
+                    icon: 'pi pi-search',
+                    route:'/search'
+                }
+            ]
+        },
+        {
+            label: 'Profile',
+            items: [
+                {
+                    label: 'Settings',
+                    icon: 'pi pi-cog',
+                    route:'/setting'
+                },
+                {
+                    label: 'Logout',
+                    icon: 'pi pi-sign-out',
+                    command: logout
+                }
+            ]
+        }
+    ]);
+
+    const menuItems = computed(() => {
+        return isAdmin.value ? adminItems.value : items.value;
+    });
+
     onMounted(() => {
         const userString = sessionStorage.getItem('user');
         if (userString) {
@@ -90,17 +143,21 @@
                 const user = JSON.parse(userString);
                 userName.value = user.login_name || 'User';
                 userDescription.value = user.description || 'Role';
+
+                // Check if the user is an admin
+                isAdmin.value = userDescription.value === 'admin';
             } catch (error) {
                 console.error('Error parsing user data:', error);
                 userName.value = 'User';
                 userDescription.value = 'Role';
+                isAdmin.value = false;
             }
         }
     });
 </script>
 
 <template>
-    <Menu :model="items">
+    <Menu :model="menuItems">
         <template #start>
             <button
                 v-ripple

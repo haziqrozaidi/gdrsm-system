@@ -198,9 +198,9 @@ onMounted(() => {
         <div class="flex justify-between mb-4">
           <h2 class="text-2xl font-bold">Search file</h2>
         </div>
-        <div class="flex flex-col p-5 gap-2.5">
+        <div class="flex flex-col gap-2.5">
           <!-- Search Bar with Category Dropdown -->
-          <div class="flex items-center gap-2.5 bg-gray-100 p-2.5 rounded-lg">
+          <div class="flex items-center gap-2.5 bg-gray-100 rounded-lg">
             <div class="relative flex-grow">
               <i class="pi pi-search absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
               <input
