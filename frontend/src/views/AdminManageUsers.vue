@@ -93,6 +93,7 @@ const confirmRoleChange = async () => {
     } catch (error) {
       console.error('Failed to change user role:', error.message);
     }
+    await logUserActivity('Change user role', selectedUser.value.full_name);
   } else {
     showChangeRoleDialog.value = false;
   }
@@ -149,7 +150,7 @@ const confirmDeleteUser = async () => {
       if (!response.ok) {
         throw new Error(`Failed to delete user: ${response.status}`);
       }
-
+      await logUserActivity('Delete user', selectedUser.value.name);
       await fetchUsers();
       showDeleteUserDialog.value = false;
       selectedUser.value = null;

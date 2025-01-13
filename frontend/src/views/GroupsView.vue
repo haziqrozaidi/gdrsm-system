@@ -33,7 +33,20 @@
     const selectedUsersToAdd = ref([])
     const showAddMembersDialog = ref(false)
 
-
+    const logUserActivity = async (action, resourceName) => {
+    try {
+        await fetch('http://127.0.0.1:3000/api/logs', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, resource_name: resourceName }),
+        });
+    } catch (error) {
+        console.error('Failed to log user activity:', error.message);
+    }
+};
     const group = ref({
         name: '',
         description: ''
@@ -157,6 +170,7 @@
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Group creation failed');
             }
+            await logUserActivity('Create Group', group.value.name);
 
             const newGroup = await response.json();
             console.log('Group created successfully:', newGroup);

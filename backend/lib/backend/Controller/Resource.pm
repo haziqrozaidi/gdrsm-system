@@ -12,13 +12,11 @@ sub getAllResources {
   my $role = $c->session('role');
   my $description =$c->session('description');
   unless ($username && ($role || $description)) {
-    $c->app->log->error("Authentication failed: username => " . ($username // 'undef') . ", role => " . ($role // 'undef'));
   return $c->render(
     json => {error => 'User not authenticated'},
     status => 401
     );
   }
-      $c->app->log->error("Authentication failed: username => " . ($username // 'undef') . ", role => " . ($role // 'undef'));
 
   # Load database configuration
   my $config = eval { LoadFile('config/database.yml') };

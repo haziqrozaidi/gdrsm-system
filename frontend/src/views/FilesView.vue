@@ -132,7 +132,7 @@
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
             }
-
+            await logUserActivity('Upload', resource.value.name);
             const data = await response.json();
             console.log('Success:', data);
 
@@ -188,7 +188,7 @@
                 const errorData = await response.json()
                 throw new Error(errorData.error || 'Update failed')
             }
-
+            await logUserActivity('Update', resource.value.name);
             await fetchResources()
 
             // Reset form and close dialog
@@ -240,7 +240,8 @@
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`)
             }
-
+            JSON.stringify(resource.value)
+            await logUserActivity('Delete', resource.value.name);
             await fetchResources()
             showDeleteResourceDialog.value = false
             resourceToDelete.value = null
@@ -308,7 +309,7 @@
             resourceToShare.value = null;
             selectedUsers.value = [];
             selectedGroups.value = [];
-
+            await logUserActivity('Share Resource', resource.value.name);
             toast.add({
                 severity: 'success',
                 summary: 'Success',
@@ -519,6 +520,7 @@
             }
 
             // Refresh shared users list
+            await logUserActivity('Unshare Resource', resource.value.name);
             await fetchSharedUsers(resourceToShare.value.resource_id);
 
             toast.add({
@@ -583,6 +585,21 @@
             });
         }
     }
+const logUserActivity = async (action, resourceName) => {
+    try {
+        await fetch('http://127.0.0.1:3000/api/logs', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, resource_name: resourceName }),
+        });
+    } catch (error) {
+        console.error('Failed to log user activity:', error.message);
+    }
+};
+
 
     const openResourceLink = (link) => {
         window.open(link, '_blank');

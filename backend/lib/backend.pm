@@ -66,6 +66,10 @@ sub startup ($self) {
     );
     return 0;
   });
+
+  #Log
+  $authorized->post('/api/logs')->to('Logs#log_activity');
+  $authorized->get('/api/logs/recent')->to('Logs#get_recent_activities');
   #Admin
   $authorized->get('/api/admin/users')->to('AdminUser#fetchAllUsers');
   $authorized->put('/api/admin/users/update-role')->to('AdminUser#updateUserRole');

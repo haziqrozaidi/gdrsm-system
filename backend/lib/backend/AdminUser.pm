@@ -94,7 +94,7 @@ sub updateUserRole {
 
     unless ($full_name && $new_role) {
         return $c->render(
-            json => {error => 'Missing user_id or role'},
+            json => {error => 'Missing full name and role'},
             status => 400
         );
     }
