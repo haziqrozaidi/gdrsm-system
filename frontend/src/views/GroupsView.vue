@@ -306,7 +306,11 @@
 
     const updateGroup = async () => {
         try {
-            const response = await fetch(`http://127.0.0.1:3000/api/groups/${editingGroup.value.group_id}`, {
+            const url = user.value?.description === 'admin'
+                ? `http://127.0.0.1:3000/api/admin/groups/${editingGroup.value.group_id}`
+                : `http://127.0.0.1:3000/api/groups/${editingGroup.value.group_id}`;
+
+            const response = await fetch(url, {
                 method: 'PUT',
                 credentials: 'include',
                 headers: {
