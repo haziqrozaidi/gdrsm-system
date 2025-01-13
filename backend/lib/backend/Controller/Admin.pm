@@ -1809,4 +1809,96 @@ sub addGroupMembers {
     );
 }
 
+sub removeResourceFromGroup {
+    my $c = shift;
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+    my $group_id = $c->stash('group_id');
+
+    # Get request data
+    my $data = $c->req->json;
+    my $resource_id = $data->{resource_id};
+
+    # Validate input
+    unless ($group_id && $resource_id) {
+        return $c->render(
+            json => {error => 'Group ID and Resource ID are required'},
+            status => 400
+        );
+    }
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Remove resource from group
+    my $remove_resource_sth = eval {
+        my $prep = $dbh->prepare(
+            'DELETE FROM group_resource
+             WHERE group_id = ? AND resource_id = ?'
+        );
+        $prep->execute($group_id, $resource_id);
+        $dbh->commit;
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->rollback;
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource removal failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Check if any rows were deleted
+    if ($remove_resource_sth->rows == 0) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Resource not found in the group'},
+            status => 404
+        );
+    }
+
+    $dbh->disconnect;
+
+    # Return success response
+    $c->render(
+        json => {
+            message => 'Resource successfully removed by admin',
+            resource_id => $resource_id,
+            group_id => $group_id,
+            removed_by => $username
+        },
+        status => 200
+    );
+}
+
 1;

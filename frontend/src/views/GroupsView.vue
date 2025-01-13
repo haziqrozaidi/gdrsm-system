@@ -443,7 +443,11 @@
 
     const deleteGroupResource = async (resourceId) => {
         try {
-            const response = await fetch(`http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/resources/delete`, {
+            const url = user.value?.description === 'admin'
+                ? `http://127.0.0.1:3000/api/admin/groups/${selectedGroup.value.group_id}/resources`
+                : `http://127.0.0.1:3000/api/groups/${selectedGroup.value.group_id}/resources`;
+
+            const response = await fetch(url, {
                 method: 'DELETE',
                 credentials: 'include',
                 headers: {
