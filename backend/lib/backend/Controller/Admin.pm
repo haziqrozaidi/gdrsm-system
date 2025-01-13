@@ -1502,5 +1502,81 @@ sub getGroupResources {
     $c->render(json => $resources);
 }
 
+sub getGroupMembers {
+    my $c = shift;
+
+    # Get group_id from URL parameter
+    my $group_id = $c->stash('group_id');
+
+    # Check if the user is an admin
+    my $username = $c->session('login_name');
+    my $description = $c->session('description');
+
+    # Load database configuration
+    my $config = eval { LoadFile('config/database.yml') };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Could not load database configuration'},
+            status => 500
+        );
+    }
+
+    my $db_config = $config->{database};
+
+    # Establish database connection
+    my $dbh = eval {
+        DBI->connect(
+            $db_config->{dsn},
+            $db_config->{username},
+            $db_config->{password},
+            { RaiseError => 1, AutoCommit => 0 }
+        );
+    };
+
+    if ($@) {
+        return $c->render(
+            json => {error => 'Database connection failed: ' . $@},
+            status => 500
+        );
+    }
+
+    # Fetch group members
+    my $members_sth = eval {
+        my $prep = $dbh->prepare(
+            'SELECT
+                u.user_id,
+                u.username,
+                u.email,
+                u.full_name,
+                u.faculty,
+                u.role,
+                gm.date_joined,
+                CASE WHEN ug.user_id = u.user_id THEN 1 ELSE 0 END as is_owner
+            FROM group_members gm
+            JOIN user u ON gm.user_id = u.user_id
+            JOIN user_group ug ON gm.group_id = ug.group_id
+            WHERE gm.group_id = ?'
+        );
+        $prep->execute($group_id);
+        $prep;
+    };
+
+    if ($@) {
+        $dbh->disconnect;
+        return $c->render(
+            json => {error => 'Fetching group members failed: ' . $@},
+            status => 500
+        );
+    }
+
+    my $members = $members_sth->fetchall_arrayref({});
+    $members_sth->finish;
+
+    $dbh->disconnect;
+
+    # Return members
+    $c->render(json => $members);
+}
 
 1;

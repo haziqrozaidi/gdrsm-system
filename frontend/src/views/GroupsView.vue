@@ -128,8 +128,12 @@
 
             groupResources.value = await resourcesResponse.json();
 
+            const url2 = user.value?.description === 'admin'
+                ? `http://127.0.0.1:3000/api/admin/groups/${groupId}/members`
+                : `http://127.0.0.1:3000/api/groups/${groupId}/members`;
+
             // Fetch group members
-            const membersResponse = await fetch(`http://127.0.0.1:3000/api/groups/${groupId}/members`, {
+            const membersResponse = await fetch(url2, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
