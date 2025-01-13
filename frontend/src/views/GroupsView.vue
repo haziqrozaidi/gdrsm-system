@@ -85,7 +85,11 @@
 
     const fetchUserGroups = async () => {
         try {
-            const response = await fetch('http://127.0.0.1:3000/api/groups', {
+            const url = user.value?.description === 'admin'
+                ? 'http://127.0.0.1:3000/api/admin/groups'
+                : 'http://127.0.0.1:3000/api/groups';
+
+            const response = await fetch(url, {
                 method: 'GET',
                 credentials: 'include',
                 headers: {
@@ -693,13 +697,17 @@
                         @row-select="onRowSelect"
                     >
                         <Column field="name" header="Group Name"></Column>
-                        <Column field="membership_status" header="Category">
+                        <Column field="membership_status" header="Owner/Category">
                             <template #body="{ data }">
                                 <Tag
+                                    v-if="user?.description !== 'admin'"
                                     :value="data.membership_status"
                                     :severity="data.membership_status === 'Created' ? 'success' : 'info'"
                                     rounded
                                 />
+                                <span v-else>
+                                    {{ data.owner_email }}
+                                </span>
                             </template>
                         </Column>
                         <Column field="description" header="Description"></Column>
