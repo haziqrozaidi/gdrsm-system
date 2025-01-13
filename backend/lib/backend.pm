@@ -131,6 +131,7 @@ sub startup ($self) {
   $authorized->delete('/api/admin/groups/:group_id/members')->to('Admin#removeGroupMember');
   $authorized->post('/api/admin/groups/:group_id/members')->to('Admin#addGroupMembers');
   $authorized->delete('/api/admin/groups/:group_id/resources')->to('Admin#removeResourceFromGroup');
+  $authorized->get('/api/admin/resource/statistics')->to('Admin#getResourceStatistics');
 }
 
 1;

@@ -1901,4 +1901,69 @@ sub removeResourceFromGroup {
     );
 }
 
+sub getResourceStatistics {
+  my $c = shift;
+
+  # Check if the user is an admin
+  my $username = $c->session('login_name');
+  my $description = $c->session('description');
+
+  # Load database configuration
+  my $config = eval { LoadFile('config/database.yml') };
+  if ($@) {
+    return $c->render(
+      json => { error => 'Could not load database configuration' },
+      status => 500
+    );
+  }
+  my $db_config = $config->{database};
+
+  # Establish database connection
+  my $dbh = eval {
+    DBI->connect(
+      $db_config->{dsn},
+      $db_config->{username},
+      $db_config->{password},
+      { RaiseError => 1, AutoCommit => 0 }
+    );
+  };
+  if ($@) {
+    return $c->render(
+      json => { error => 'Database connection failed: ' . $@ },
+      status => 500
+    );
+  }
+
+  # Query comprehensive resource statistics
+  my $total_resources = $dbh->selectrow_array('SELECT COUNT(*) FROM resource');
+  my $total_shared_resources = $dbh->selectrow_array('SELECT COUNT(*) FROM user_resource');
+  my $total_users = $dbh->selectrow_array('SELECT COUNT(*) FROM user');
+  my $active_category = $dbh->selectrow_array('SELECT COUNT(*) FROM category');
+  my $total_groups = $dbh->selectrow_array('SELECT COUNT(*) FROM user_group');
+
+  # Query resources by type
+  my $resources_by_type = $dbh->selectall_arrayref(
+    'SELECT type, COUNT(*) as count FROM resource GROUP BY type'
+  );
+
+  # Convert resources by type to a hashref
+  my %type_counts;
+  foreach my $row (@$resources_by_type) {
+    $type_counts{$row->[0]} = $row->[1];
+  }
+
+  # Return comprehensive statistics as JSON
+  return $c->render(
+    json => {
+      total_resources => $total_resources || 0,
+      total_shared_resources => $total_shared_resources || 0,
+      total_users => $total_users || 0,
+      active_category => $active_category || 0,
+      total_groups => $total_groups || 0,
+      resources_by_type => \%type_counts,
+      retrieved_by => $username
+    }
+  );
+}
+
 1;

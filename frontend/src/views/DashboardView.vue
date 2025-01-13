@@ -5,6 +5,7 @@ import Card from "primevue/card";
 import Sidebar from "../components/Sidebar.vue";
 
 // State to store username and statistic
+const user = ref({})
 const fullName = ref('');
 const totalSharedResources = ref(0);
 const userUploadedResources = ref(0);
@@ -24,7 +25,10 @@ const fetchFullNameFromSession = () => {
 };
 // Function to fetch resource statistics
 const fetchResourceStatistics = async () => {
-    const url = 'http://127.0.0.1:3000/api/resource/statistics';
+    const url = user.value?.description === 'admin'
+    ? `http://127.0.0.1:3000/api/admin/resource/statistics`
+    : `http://127.0.0.1:3000/api/resource/statistics`;
+
 
     try {
         const response = await fetch(url, {
@@ -49,6 +53,15 @@ const fetchResourceStatistics = async () => {
 };
 // Fetch the full name when the component is mounted
 onMounted(() => {
+  const userString = sessionStorage.getItem('user')
+  if (userString) {
+    try {
+      // Parse the JSON string
+      user.value = JSON.parse(userString)
+    } catch (error) {
+      console.error('Error parsing user from sessionStorage:', error)
+    }
+  }
     console.log('Dashboard mounted, fetching username and statistic...');
   fetchFullNameFromSession();
   fetchResourceStatistics();

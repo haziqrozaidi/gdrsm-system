@@ -107,11 +107,6 @@
                     label: 'Groups',
                     icon: 'pi pi-users',
                     route: '/groups'
-                },
-                {
-                    label: 'Search',
-                    icon: 'pi pi-search',
-                    route:'/search'
                 }
             ]
         },
