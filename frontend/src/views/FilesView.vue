@@ -16,6 +16,8 @@
     import Tag from 'primevue/tag'
     import Toast from 'primevue/toast'
     import Chip from 'primevue/chip'
+    import IconField from 'primevue/iconfield';
+    import InputIcon from 'primevue/inputicon';
 
     const toast = useToast()
 
@@ -747,17 +749,34 @@
             <div class="card">
                 <div class="flex justify-between mb-4">
                     <h2 class="text-2xl font-bold">Resource Management</h2>
-                    <Button
-                        label="Add New Resource"
-                        icon="pi pi-plus"
-                        @click="showAddResourceDialog = true"
-                    />
+                    <div class="flex gap-4 items-center">
+                        <IconField>
+                            <InputIcon class="pi pi-search" />
+                            <InputText 
+                                v-model="filters['global'].value" 
+                                placeholder="Search" 
+                                class="w-full"
+                            />
+                        </IconField>
+                        <Button
+                            label="Add New Resource"
+                            icon="pi pi-plus"
+                            @click="showAddResourceDialog = true"
+                        />
+                    </div>
                 </div>
 
                 <DataTable
                     v-model:filters="filters"
                     filterDisplay="menu"
-                    :globalFilterFields="['type', 'session', 'semester']"
+                    :globalFilterFields="[
+                        'name', 
+                        'category_name', 
+                        'description', 
+                        'owner', 
+                        'session', 
+                        'semester'
+                    ]"
                     :value="resources"
                     stripedRows
                     paginator :rows="5" :rowsPerPageOptions="[5, 10, 20, 50]"
