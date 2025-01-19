@@ -315,6 +315,12 @@
                 throw new Error(errorData.error || 'Sharing failed');
             }
 
+            // Update the resource's sharing status
+            const updatedResource = resources.value.find(r => r.resource_id === resourceToShare.value.resource_id);
+            if (updatedResource) {
+                updatedResource.isShared = true;
+            }
+
             // Success handling
             console.log('Resource shared successfully');
             showShareResourceDialog.value = false;
@@ -358,9 +364,72 @@
                 throw new Error(`Response status: ${response.status}`);
             }
 
-            resources.value = await response.json();
+            const fetchedResources = await response.json();
+            
+            // For each resource, fetch its sharing status
+            resources.value = await Promise.all(fetchedResources.map(async (resource) => {
+                const [sharedUsers, sharedGroups] = await Promise.all([
+                    fetchResourceSharedUsers(resource.resource_id),
+                    fetchResourceSharedGroups(resource.resource_id)
+                ]);
+                
+                return {
+                    ...resource,
+                    isShared: sharedUsers.length > 0 || sharedGroups.length > 0
+                };
+            }));
         } catch (error) {
             console.error(error.message);
+        }
+    }
+
+    const fetchResourceSharedUsers = async (resourceId) => {
+        const url = user.value?.description === 'admin'
+            ? `http://127.0.0.1:3000/api/admin/resources/${resourceId}/shared-users`
+            : `http://127.0.0.1:3000/api/resources/${resourceId}/shared-users`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                return [];
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching shared users:', error);
+            return [];
+        }
+    }
+
+    const fetchResourceSharedGroups = async (resourceId) => {
+        const url = user.value?.description === 'admin'
+            ? `http://127.0.0.1:3000/api/admin/resources/${resourceId}/shared-groups`
+            : `http://127.0.0.1:3000/api/resources/${resourceId}/shared-groups`;
+        
+        try {
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            if (!response.ok) {
+                return [];
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching shared groups:', error);
+            return [];
         }
     }
 
@@ -552,6 +621,18 @@
                 throw new Error(errorData.error || 'Unsharing failed');
             }
 
+            // Check if resource still has any shares
+            const [remainingUsers, remainingGroups] = await Promise.all([
+                fetchResourceSharedUsers(resourceToShare.value.resource_id),
+                fetchResourceSharedGroups(resourceToShare.value.resource_id)
+            ]);
+            
+            // Update the resource's sharing status
+            const updatedResource = resources.value.find(r => r.resource_id === resourceToShare.value.resource_id);
+            if (updatedResource) {
+                updatedResource.isShared = remainingUsers.length > 0 || remainingGroups.length > 0;
+            }
+
             // Refresh shared users list
             await fetchSharedUsers(resourceToShare.value.resource_id);
 
@@ -599,6 +680,18 @@
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Unsharing failed');
+            }
+
+            // Check if resource still has any shares
+            const [remainingUsers, remainingGroups] = await Promise.all([
+                fetchResourceSharedUsers(resourceToShare.value.resource_id),
+                fetchResourceSharedGroups(resourceToShare.value.resource_id)
+            ]);
+            
+            // Update the resource's sharing status
+            const updatedResource = resources.value.find(r => r.resource_id === resourceToShare.value.resource_id);
+            if (updatedResource) {
+                updatedResource.isShared = remainingUsers.length > 0 || remainingGroups.length > 0;
             }
 
             // Refresh shared groups list
@@ -712,7 +805,7 @@
                                     icon="pi pi-share-alt"
                                     outlined
                                     rounded
-                                    severity="secondary"
+                                    :severity="data.isShared ? 'success' : 'secondary'"
                                     @click="openShareResourceDialog(data)"
                                 />
                                 <Button
