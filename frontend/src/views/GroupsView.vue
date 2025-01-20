@@ -2,6 +2,7 @@
     import { ref, onMounted } from 'vue'
     import { useConfirm } from "primevue/useconfirm";
     import { useToast } from "primevue/usetoast";
+    import { FilterMatchMode } from '@primevue/core/api';
     import Sidebar from '../components/Sidebar.vue'
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
@@ -15,6 +16,12 @@
     import ConfirmDialog from 'primevue/confirmdialog'
     import Toast from 'primevue/toast'
     import MultiSelect from 'primevue/multiselect'
+    import IconField from 'primevue/iconfield';
+    import InputIcon from 'primevue/inputicon';
+
+    const filters = ref({
+        'global': { value: null, matchMode: FilterMatchMode.CONTAINS }
+    })
 
     const confirm = useConfirm();
     const toast = useToast();
@@ -708,16 +715,35 @@
             <div class="card">
                 <div v-if="!selectedGroup" class="flex justify-between mb-4">
                     <h2 class="text-2xl font-bold">Group Management</h2>
-                    <Button
-                        label="Create New Group"
-                        icon="pi pi-plus"
-                        @click="showCreateGroupDialog = true"
-                    />
+                    <div class="flex gap-4 items-center">
+                        <IconField>
+                            <InputIcon class="pi pi-search" />
+                            <InputText 
+                                v-model="filters['global'].value" 
+                                placeholder="Search" 
+                                class="w-full"
+                            />
+                        </IconField>
+                        <Button
+                            label="Create New Group"
+                            icon="pi pi-plus"
+                            @click="showCreateGroupDialog = true"
+                        />
+                    </div>
                 </div>
 
                 <div v-if="!selectedGroup">
                     <DataTable
                         :value="groups"
+                        :filters="filters"
+                        filterDisplay="menu"
+                        :globalFilterFields="[
+                            'name', 
+                            'description', 
+                            'membership_status', 
+                            'owner_email', 
+                            'date_created'
+                        ]"
                         stripedRows
                         selectionMode="single"
                         @row-select="onRowSelect"
