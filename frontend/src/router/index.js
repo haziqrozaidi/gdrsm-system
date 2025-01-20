@@ -11,6 +11,7 @@ import SearchView from '../views/SearchView.vue'
 import SettingView from '../views/SettingView.vue'
 import CategoriesView from '../views/CategoriesView.vue'
 import GroupsView from '../views/GroupsView.vue'
+import AdminManageUsers from '../views/AdminManageUsers.vue'; 
 
 const routes = [
   {
@@ -63,6 +64,12 @@ const routes = [
     name: 'sharing',
     component: SharingView,
     meta: { requiresAuth: true }
+  },
+  {
+    path: '/admin/manage-users',
+    name: 'ManageUsers',
+    component: AdminManageUsers,
+    meta: { requiresAuth: true } 
   },
   {
     path: '/groups',
