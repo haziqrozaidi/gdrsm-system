@@ -18,9 +18,11 @@
     import MultiSelect from 'primevue/multiselect'
     import IconField from 'primevue/iconfield';
     import InputIcon from 'primevue/inputicon';
+    import Badge from 'primevue/badge'
 
     const filters = ref({
-        'global': { value: null, matchMode: FilterMatchMode.CONTAINS }
+        'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
+        'category_name': { value: [], matchMode: FilterMatchMode.IN }
     })
 
     const confirm = useConfirm();
@@ -687,6 +689,15 @@
 
     const backToGroupList = () => {
         selectedGroup.value = null;
+
+        groupResources.value = []; // Reset group resources
+        groupMembers.value = []; // Reset group members
+        
+        // Reset filters
+        filters.value = {
+            'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
+            'category_name': { value: [], matchMode: FilterMatchMode.IN }
+        }
     }
 
     const openResourceLink = (link) => {
@@ -753,7 +764,7 @@
                             <template #body="{ data }">
                                 <Tag
                                     v-if="user?.description !== 'admin'"
-                                    :value="data.membership_status"
+                                    :value="data.membership_status === 'Created' ? 'Owner' : 'Member'"
                                     :severity="data.membership_status === 'Created' ? 'success' : 'info'"
                                     rounded
                                 />
@@ -818,11 +829,33 @@
                                     @click="openShareResourceDialog"
                                 />
                             </div>
-                            <DataTable :value="groupResources" stripedRows>
+                            <DataTable
+                                v-model:filters="filters"
+                                filterDisplay="menu"
+                                :globalFilterFields="[
+                                    'category_name'
+                                ]"
+                                :value="groupResources"
+                                stripedRows
+                            >
                                 <Column field="name" header="Name"></Column>
-                                <Column header="Category">
+                                <Column 
+                                    field="category_name" 
+                                    header="Category" 
+                                    :showFilterMatchModes="false"
+                                    :filterMenuStyle="{ width: '16rem' }"
+                                >
                                     <template #body="{ data }">
                                         <Tag :value="data.category_name" severity="info" rounded />
+                                    </template>
+                                    <template #filter="{ filterModel }">
+                                        <MultiSelect
+                                            v-model="filterModel.value"
+                                            :options="[...new Set(groupResources.map(resource => resource.category_name))]"
+                                            placeholder="Select Categories"
+                                            class="p-column-filter"
+                                            :maxSelectedLabels="1"
+                                        />
                                     </template>
                                 </Column>
                                 <Column field="description" header="Description"></Column>
@@ -866,7 +899,19 @@
                                 />
                             </div>
                             <DataTable :value="groupMembers" stripedRows :sortField="'is_owner'" :sortOrder="-1">
-                                <Column field="full_name" header="Full Name"></Column>
+                                <Column field="full_name" header="Full Name">
+                                    <template #body="{ data }">
+                                        <div class="flex items-center gap-2">
+                                            {{ data.full_name }}
+                                            <Badge 
+                                                v-if="data.is_owner" 
+                                                value="Owner" 
+                                                severity="info" 
+                                                size="small"
+                                            />
+                                        </div>
+                                    </template>
+                                </Column>
                                 <Column field="role" header="Role"></Column>
                                 <Column field="email" header="Email"></Column>
                                 <Column field="username" header="Username"></Column>

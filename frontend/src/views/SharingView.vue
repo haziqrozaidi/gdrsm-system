@@ -1,5 +1,5 @@
 <script setup>
-    import { ref, onMounted } from 'vue'
+    import { ref, onMounted, computed } from 'vue'
     import { FilterMatchMode } from '@primevue/core/api';
     import DataTable from 'primevue/datatable'
     import Column from 'primevue/column'
@@ -14,12 +14,20 @@
 
     const filters = ref({
         'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
-        'session': { value: null, matchMode: FilterMatchMode.IN },
-        'semester': { value: null, matchMode: FilterMatchMode.IN },
-        'owner': { value: null, matchMode: FilterMatchMode.IN }
+        'combinedSession': { value: null, matchMode: FilterMatchMode.IN },
+        'owner': { value: null, matchMode: FilterMatchMode.IN },
+        'category_name': { value: [], matchMode: FilterMatchMode.IN } // Add this line
+    })
+
+    const resourcesWithCombinedSession = computed(() => {
+        return sharedResources.value.map(resource => ({
+            ...resource,
+            combinedSession: `${resource.session}-${resource.semester}`
+        }))
     })
 
     const ownersFilter = ref([])
+    const categoryFilter = ref([])
 
     const sharedResources = ref([])
     const loading = ref(false)
@@ -49,6 +57,7 @@
             sharedResources.value = await response.json();
 
             ownersFilter.value = [...new Set(sharedResources.value.map(resource => resource.owner))]
+            categoryFilter.value = [...new Set(sharedResources.value.map(resource => resource.category_name))]
         } catch (error) {
             console.error('Failed to fetch shared resources:', error.message);
         } finally {
@@ -119,18 +128,31 @@
                         'category_name', 
                         'description', 
                         'owner', 
-                        'session', 
-                        'semester'
+                        'combinedSession'
                     ]"
-                    :value="sharedResources"
+                    :value="resourcesWithCombinedSession"
                     :loading="loading"
                     emptyMessage="No shared resources"
                     stripedRows
                 >
                     <Column field="name" header="Name"></Column>
-                    <Column header="Category">
+                    <Column 
+                        field="category_name" 
+                        header="Category" 
+                        :showFilterMatchModes="false"
+                        :filterMenuStyle="{ width: '16rem' }"
+                    >
                         <template #body="{ data }">
                             <Tag :value="data.category_name" severity="info" rounded />
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="categoryFilter"
+                                placeholder="Select Categories"
+                                class="p-column-filter"
+                                :maxSelectedLabels="1"
+                            />
                         </template>
                     </Column>
                     <Column field="description" header="Description"></Column>
@@ -144,15 +166,20 @@
                         </template>
                     </Column>
                     <Column field="date_shared" header="Date Shared"></Column>
-                    <Column field="session" header="Session" :showFilterMatchModes="false">
+                    <Column 
+                        field="combinedSession" 
+                        header="Session" 
+                        :showFilterMatchModes="false"
+                    >
                         <template #body="{ data }">
-                            {{ data.session }}-{{ data.semester }}
+                            {{ data.combinedSession }}
                         </template>
                         <template #filter="{ filterModel }">
                             <MultiSelect
                                 v-model="filterModel.value"
                                 :options="['2023/2024-1', '2023/2024-2', '2024/2025-1', '2024/2025-2']"
                                 placeholder="Select Sessions"
+                                :maxSelectedLabels="1"
                             />
                         </template>
                     </Column>

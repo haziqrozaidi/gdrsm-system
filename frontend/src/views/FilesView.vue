@@ -42,8 +42,15 @@
     const filters = ref({
         'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
         'type': { value: null, matchMode: FilterMatchMode.IN },
-        'session': { value: null, matchMode: FilterMatchMode.IN },
-        'semester': { value: null, matchMode: FilterMatchMode.IN }
+        'combinedSession': { value: null, matchMode: FilterMatchMode.IN },
+        'category_name': { value: [], matchMode: FilterMatchMode.IN }
+    })
+
+    const resourcesWithCombinedSession = computed(() => {
+        return resources.value.map(resource => ({
+            ...resource,
+            combinedSession: `${resource.session}-${resource.semester}`
+        }))
     })
 
     const categoryOptions = computed(() => {
@@ -774,31 +781,49 @@
                         'category_name', 
                         'description', 
                         'owner', 
-                        'session', 
-                        'semester'
+                        'combinedSession'  // Changed from session
                     ]"
-                    :value="resources"
+                    :value="resourcesWithCombinedSession"
                     stripedRows
                     paginator :rows="5" :rowsPerPageOptions="[5, 10, 20, 50]"
                 >
                     <Column field="name" header="Name"></Column>
-                    <Column header="Category">
+                    <Column 
+                        field="category_name" 
+                        header="Category" 
+                        :showFilterMatchModes="false"
+                        :filterMenuStyle="{ width: '16rem' }"
+                    >
                         <template #body="{ data }">
                             <Tag :value="data.category_name" severity="info" rounded />
+                        </template>
+                        <template #filter="{ filterModel }">
+                            <MultiSelect
+                                v-model="filterModel.value"
+                                :options="categoryOptions.map(cat => cat.name)"
+                                placeholder="Select Categories"
+                                class="p-column-filter"
+                                :maxSelectedLabels="1"
+                            />
                         </template>
                     </Column>
                     <Column field="description" header="Description"></Column>
                     <Column field="owner" header="Owner"></Column>
                     <Column field="date_created" header="Date Added"></Column>
-                    <Column field="session" header="Session" :showFilterMatchModes="false">
+                    <Column 
+                        field="combinedSession" 
+                        header="Session" 
+                        :showFilterMatchModes="false"
+                    >
                         <template #body="{ data }">
-                            {{ data.session }}-{{ data.semester }}
+                            {{ data.combinedSession }}
                         </template>
                         <template #filter="{ filterModel }">
                             <MultiSelect
                                 v-model="filterModel.value"
                                 :options="['2023/2024-1', '2023/2024-2', '2024/2025-1', '2024/2025-2']"
                                 placeholder="Select Sessions"
+                                :maxSelectedLabels="1"
                             />
                         </template>
                     </Column>
