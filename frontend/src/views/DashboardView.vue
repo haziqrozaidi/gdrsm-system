@@ -5,67 +5,76 @@ import Card from "primevue/card";
 import Sidebar from "../components/Sidebar.vue";
 
 // State to store username and statistic
-const user = ref({})
-const fullName = ref('');
+const fullName = ref("");
 const totalSharedResources = ref(0);
 const userUploadedResources = ref(0);
 const activeCategory = ref(0);
+const recentActivities = ref([]);
+
+const fetchRecentActivities = async () => {
+  try {
+    const response = await fetch("http://127.0.0.1:3000/api/logs/recent", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch recent activities: ${response.status}`);
+    }
+
+    recentActivities.value = await response.json();
+  } catch (error) {
+    console.error("Error fetching recent activities:", error.message);
+  }
+};
 
 // Function to fetch the user object from sessionStorage
 const fetchFullNameFromSession = () => {
-    const storedSession = sessionStorage.getItem('user');
-    try {
-        // Parse the JSON object if it exists
-        const userSession = storedSession ? JSON.parse(storedSession) : null;
-        fullName.value = userSession?.full_name || 'Guest'; // Fallback to 'Guest' if not available
-    } catch (error) {
-        console.error('Error parsing utmwebfc_session from sessionStorage:', error);
-        fullName.value = 'Guest'; // Fallback in case of parsing error
-    }
+  const storedSession = sessionStorage.getItem("user");
+  try {
+    // Parse the JSON object if it exists
+    const userSession = storedSession ? JSON.parse(storedSession) : null;
+    fullName.value = userSession?.full_name || "Guest"; // Fallback to 'Guest' if not available
+  } catch (error) {
+    console.error("Error parsing utmwebfc_session from sessionStorage:", error);
+    fullName.value = "Guest"; // Fallback in case of parsing error
+  }
 };
 // Function to fetch resource statistics
 const fetchResourceStatistics = async () => {
-    const url = user.value?.description === 'admin'
-    ? `http://127.0.0.1:3000/api/admin/resource/statistics`
-    : `http://127.0.0.1:3000/api/resource/statistics`;
+  const url = "http://127.0.0.1:3000/api/resource/statistics";
 
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
 
-    try {
-        const response = await fetch(url, {
-            method: 'GET',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Response status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        totalSharedResources.value = data.total_shared_resources || 0;
-        userUploadedResources.value = data.user_uploaded_resources || 0;
-        activeCategory.value = data.active_category || 0;
-    } catch (error) {
-        console.error('Error fetching resource statistics:', error.message);
+    if (!response.ok) {
+      throw new Error(`Response status: ${response.status}`);
     }
+
+    const data = await response.json();
+    totalSharedResources.value = data.total_shared_resources || 0;
+    userUploadedResources.value = data.user_uploaded_resources || 0;
+    activeCategory.value = data.active_category || 0;
+  } catch (error) {
+    console.error("Error fetching resource statistics:", error.message);
+  }
 };
 // Fetch the full name when the component is mounted
 onMounted(() => {
-  const userString = sessionStorage.getItem('user')
-  if (userString) {
-    try {
-      // Parse the JSON string
-      user.value = JSON.parse(userString)
-    } catch (error) {
-      console.error('Error parsing user from sessionStorage:', error)
-    }
-  }
-    console.log('Dashboard mounted, fetching username and statistic...');
+  console.log("Dashboard mounted, fetching username and statistic...");
   fetchFullNameFromSession();
   fetchResourceStatistics();
-    console.log('Username set to:', fullName.value); // Debug log
+  fetchRecentActivities();
+  console.log("Username set to:", fullName.value); // Debug log
 });
 </script>
 
@@ -78,7 +87,8 @@ onMounted(() => {
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>
           <div class="text-lg text-gray-600">
-                        Welcome, <span class="font-semibold text-gray-800">{{ fullName }}</span>
+            Welcome,
+            <span class="font-semibold text-gray-800">{{ fullName }}</span>
           </div>
         </div>
 
@@ -87,7 +97,9 @@ onMounted(() => {
           <Card class="shadow-md">
             <template #title>Total Shared Resources</template>
             <template #content>
-              <div class="text-3xl font-bold text-blue-600">{{ totalSharedResources }}</div>
+              <div class="text-3xl font-bold text-blue-600">
+                {{ totalSharedResources }}
+              </div>
               <div class="text-sm text-gray-500">
                 Resources shared across courses
               </div>
@@ -97,7 +109,9 @@ onMounted(() => {
           <Card class="shadow-md">
             <template #title>Recent Uploads</template>
             <template #content>
-              <div class="text-3xl font-bold text-green-600">{{ userUploadedResources }}</div>
+              <div class="text-3xl font-bold text-green-600">
+                {{ userUploadedResources }}
+              </div>
               <div class="text-sm text-gray-500">New resources this week</div>
             </template>
           </Card>
@@ -105,7 +119,9 @@ onMounted(() => {
           <Card class="shadow-md">
             <template #title>Active Categories</template>
             <template #content>
-              <div class="text-3xl font-bold text-purple-600">{{ activeCategory }}</div>
+              <div class="text-3xl font-bold text-purple-600">
+                {{ activeCategory }}
+              </div>
               <div class="text-sm text-gray-500">Categories of resources</div>
             </template>
           </Card>
@@ -140,27 +156,22 @@ onMounted(() => {
           <Card>
             <template #content>
               <ul class="divide-y divide-gray-200">
-                <li class="py-3 flex justify-between items-center">
+                <li
+                  v-for="activity in recentActivities"
+                  :key="activity.timestamp"
+                  class="py-3 flex justify-between items-center"
+                >
                   <div>
-                    <span class="font-medium text-gray-800"
-                      >Assignment Materials</span
-                    >
-                    <span class="block text-sm text-gray-500"
-                      >Uploaded by John Doe</span
-                    >
+                    <span class="font-medium text-gray-800">{{
+                      activity.resource_name
+                    }}</span>
+                    <span class="block text-sm text-gray-500">{{
+                      activity.action
+                    }}</span>
                   </div>
-                  <span class="text-sm text-gray-500">2 hours ago</span>
-                </li>
-                <li class="py-3 flex justify-between items-center">
-                  <div>
-                    <span class="font-medium text-gray-800"
-                      >Research Paper</span
-                    >
-                    <span class="block text-sm text-gray-500"
-                      >Shared by Jane Smith</span
-                    >
-                  </div>
-                  <span class="text-sm text-gray-500">Yesterday</span>
+                  <span class="text-sm text-gray-500">{{
+                    new Date(activity.timestamp).toLocaleString()
+                  }}</span>
                 </li>
               </ul>
             </template>

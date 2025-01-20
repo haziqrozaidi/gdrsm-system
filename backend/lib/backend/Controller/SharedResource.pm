@@ -8,7 +8,7 @@ sub getResourceStatistics {
   my $c = shift;
 
   # Get the username and email from the session
-  my $username = $c->session('login_name');
+  my $username = $c->session('full_name');
   my $user_email = $c->session('email');
     $c->app->log->debug("Session contents: " . Dumper($username));
 

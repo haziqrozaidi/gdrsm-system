@@ -135,7 +135,7 @@
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`);
             }
-
+            await logUserActivity('Upload', resource.value.name);
             const data = await response.json();
             console.log('Success:', data);
 
@@ -194,7 +194,7 @@
                 const errorData = await response.json()
                 throw new Error(errorData.error || 'Update failed')
             }
-
+            await logUserActivity('Update', resource.value.name);
             await fetchResources()
 
             // Reset form and close dialog
@@ -249,7 +249,7 @@
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`)
             }
-
+            await logUserActivity('Delete', resource.value.name);
             await fetchResources()
             showDeleteResourceDialog.value = false
             resourceToDelete.value = null
@@ -317,6 +317,7 @@
 
             // Success handling
             console.log('Resource shared successfully');
+            await logUserActivity('Shared', resourceToShare.value.name);
             showShareResourceDialog.value = false;
             resourceToShare.value = null;
             selectedUsers.value = [];
@@ -554,6 +555,7 @@
 
             // Refresh shared users list
             await fetchSharedUsers(resourceToShare.value.resource_id);
+            await logUserActivity('Unshared', resourceToShare.value.name);
 
             toast.add({
                 severity: 'success',
@@ -603,7 +605,7 @@
 
             // Refresh shared groups list
             await fetchSharedGroups(resourceToShare.value.resource_id);
-
+            await logUserActivity('Unshared from group', resourceToShare.value.name);
             toast.add({
                 severity: 'success',
                 summary: 'Success',
@@ -625,7 +627,20 @@
     const openResourceLink = (link) => {
         window.open(link, '_blank');
     }
-
+    const logUserActivity = async (action, resourceName) => {
+    try {
+        await fetch('http://127.0.0.1:3000/api/logs', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, resource_name: resourceName }),
+        });
+    } catch (error) {
+        console.error('Failed to log user activity:', error.message);
+    }
+};
     onMounted(() => {
         // Retrieve user from sessionStorage
         const userString = sessionStorage.getItem('user')

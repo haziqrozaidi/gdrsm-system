@@ -87,6 +87,11 @@
                     label: 'Dashboard',
                     icon: 'pi pi-home',
                     route: '/dashboard'
+                },
+                {
+                            label: 'Manage User',
+                            icon: 'pi pi-users',
+                            route: '/admin/manage-users',
                 }
             ]
         },

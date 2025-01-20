@@ -87,3 +87,13 @@ CREATE TABLE group_resource (
     FOREIGN KEY (group_id) REFERENCES user_group(group_id) ON DELETE CASCADE,
     FOREIGN KEY (resource_id) REFERENCES resource(resource_id) ON DELETE CASCADE
 );
+
+-- Create table for logging function no need to populate
+CREATE TABLE logs (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    action VARCHAR(255) NOT NULL,
+    resource_name VARCHAR(255) NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES user(user_id) ON DELETE CASCADE
+);
