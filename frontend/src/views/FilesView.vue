@@ -53,6 +53,20 @@
         }))
     })
 
+    const availableUsers = computed(() => {
+        // Filter out users that are already shared with the current resource
+        return users.value.filter(user => 
+            !sharedUsers.value.some(sharedUser => sharedUser.user_id === user.user_id)
+        );
+    })
+
+    const availableGroups = computed(() => {
+        // Filter out groups that are already shared with the current resource
+        return groups.value.filter(group => 
+            !sharedGroups.value.some(sharedGroup => sharedGroup.group_id === group.group_id)
+        );
+    })
+
     const categoryOptions = computed(() => {
         return categories.value.map(category => ({
             name: category.name,
@@ -1085,7 +1099,7 @@
                         <MultiSelect
                             id="users"
                             v-model="selectedUsers"
-                            :options="users"
+                            :options="availableUsers"
                             optionLabel="email"
                             optionValue="user_id"
                             placeholder="Select Users to Share With"
@@ -1101,7 +1115,7 @@
                         <MultiSelect
                             id="groups"
                             v-model="selectedGroups"
-                            :options="groups"
+                            :options="availableGroups"
                             optionLabel="name"
                             optionValue="group_id"
                             placeholder="Select Groups to Share With"
