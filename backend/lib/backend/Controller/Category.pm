@@ -62,7 +62,7 @@ sub getAllCategories {
 
 sub addCategory {
     my $c = shift;
-$c->session('full_name');
+
     # Get the category data from the request
     my $category_data = $c->req->json;
 
@@ -74,14 +74,7 @@ $c->session('full_name');
         );
     }
 
-    my $username = $c->session('full_name');
-
-    unless ($username) {
-        return $c->render(
-            json => {error => 'User not authenticated'},
-            status => 401
-        );
-    }
+    my $username = $c->session('login_name');
 
     # Load database configuration
     my $config = eval { LoadFile('config/database.yml') };
@@ -197,14 +190,7 @@ sub updateCategory {
     }
 
     # Check user authentication
-    my $username = $c->session('full_name');
-
-    unless ($username) {
-        return $c->render(
-            json => {error => 'User not authenticated'},
-            status => 401
-        );
-    }
+    my $username = $c->session('login_name');
 
     # Load database configuration
     my $config = eval { LoadFile('config/database.yml') };
@@ -349,14 +335,7 @@ sub deleteCategory {
     }
 
     # Check user authentication
-    my $username = $c->session('full_name');
-
-    unless ($username) {
-        return $c->render(
-            json => {error => 'User not authenticated'},
-            status => 401
-        );
-    }
+    my $username = $c->session('login_name');
 
     # Load database configuration
     my $config = eval { LoadFile('config/database.yml') };
