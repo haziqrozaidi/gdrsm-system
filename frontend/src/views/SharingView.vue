@@ -8,6 +8,9 @@
     import MultiSelect from 'primevue/multiselect'
     import Sidebar from '../components/Sidebar.vue'
     import Tag from 'primevue/tag'
+    import IconField from 'primevue/iconfield'
+    import InputIcon from 'primevue/inputicon'
+    import InputText from 'primevue/inputtext'
 
     const filters = ref({
         'global': { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -96,12 +99,29 @@
             <div class="card">
                 <div class="flex justify-between mb-4">
                     <h2 class="text-2xl font-bold">Shared with me</h2>
+                    <div class="flex gap-4 items-center">
+                        <IconField>
+                            <InputIcon class="pi pi-search" />
+                            <InputText 
+                                v-model="filters['global'].value" 
+                                placeholder="Search" 
+                                class="w-full"
+                            />
+                        </IconField>
+                    </div>
                 </div>
 
                 <DataTable
                     v-model:filters="filters"
                     filterDisplay="menu"
-                    :globalFilterFields="['session', 'semester', 'owner']"
+                    :globalFilterFields="[
+                        'name', 
+                        'category_name', 
+                        'description', 
+                        'owner', 
+                        'session', 
+                        'semester'
+                    ]"
                     :value="sharedResources"
                     :loading="loading"
                     emptyMessage="No shared resources"
