@@ -815,6 +815,8 @@
                     :value="resourcesWithCombinedSession"
                     stripedRows
                     paginator :rows="5" :rowsPerPageOptions="[5, 10, 20, 50]"
+                    emptyMessage="No resources found"
+                    :loading="loading"
                 >
                     <Column field="name" header="Name"></Column>
                     <Column 
@@ -891,6 +893,13 @@
                             </div>
                         </template>
                     </Column>
+                    <template #empty>
+                        <div class="flex justify-center items-center flex-col p-6">
+                            <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-xl text-gray-500 mb-2">No resources found</p>
+                            <p class="text-gray-400 mb-4 text-center">Try adjusting your search or filter</p>
+                        </div>
+                    </template>
                 </DataTable>
 
                 <!-- Add Resource Modal -->

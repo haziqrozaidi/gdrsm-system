@@ -203,6 +203,15 @@
                             />
                         </template>
                     </Column>
+                    <template #empty>
+                    <div class="flex justify-center items-center flex-col p-6">
+                        <i class="pi pi-inbox text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-xl text-gray-500 mb-2">No shared resources</p>
+                        <p class="text-gray-400 mb-4 text-center">
+                            Resources shared with you will appear here. 
+                        </p>
+                    </div>
+                </template>
                 </DataTable>
 
                 <!-- Delete Shared Resource Dialog -->

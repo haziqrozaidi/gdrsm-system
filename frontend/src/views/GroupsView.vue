@@ -805,6 +805,15 @@
                                 />
                             </template>
                         </Column>
+                        <template #empty>
+                            <div class="flex justify-center items-center flex-col p-6">
+                                <i class="pi pi-users text-6xl text-gray-300 mb-4"></i>
+                                <p class="text-xl text-gray-500 mb-2">No groups found</p>
+                                <p class="text-gray-400 mb-4 text-center">
+                                    Create a new group or wait for an invitation
+                                </p>
+                            </div>
+                        </template>
                     </DataTable>
                 </div>
 
@@ -888,6 +897,15 @@
                                         />
                                     </template>
                                 </Column>
+                                <template #empty>
+                                    <div class="flex justify-center items-center flex-col p-6">
+                                        <i class="pi pi-folder-open text-6xl text-gray-300 mb-4"></i>
+                                        <p class="text-xl text-gray-500 mb-2">No resources in this group</p>
+                                        <p class="text-gray-400 mb-4 text-center">
+                                            Share resources with this group to get started
+                                        </p>
+                                    </div>
+                                </template>
                             </DataTable>
                         </TabPanel>
                         <TabPanel header="Members">
