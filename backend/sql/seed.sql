@@ -1,10 +1,10 @@
 -- Insert dummy users
 INSERT INTO user (username, full_name, email, password, role, faculty) VALUES
-('john_doe', 'John Doe', 'john.doe@utm.my', 'hashed_password123', 'lecturer', 'Faculty of Computing'),
-('jane_smith', 'Jane Smith', 'jane.smith@utm.my', 'hashed_password456', 'student', 'Faculty of Computing'),
-('bob_wilson', 'Bob Wilson', 'bob.wilson@utm.my', 'hashed_password789', 'admin', 'Faculty of Computing'),
-('alice_wong', 'Alice Wong', 'alice.wong@utm.my', 'hashed_password101', 'lecturer', 'Faculty of Computing'),
-('sam_lee', 'Sam Lee', 'sam.lee@utm.my', 'hashed_password202', 'student', 'Faculty of Computing');
+('john_doe', 'JOHN DOE', 'john.doe@utm.my', 'hashed_password123', 'lecturer', 'Faculty of Computing'),
+('jane_smith', 'JANE SMITH', 'jane.smith@utm.my', 'hashed_password456', 'student', 'Faculty of Computing'),
+('bob_wilson', 'BOB WILSON', 'bob.wilson@utm.my', 'hashed_password789', 'admin', 'Faculty of Computing'),
+('alice_wong', 'ALICE WONG', 'alice.wong@utm.my', 'hashed_password101', 'lecturer', 'Faculty of Computing'),
+('sam_lee', 'SAM LEE', 'sam.lee@utm.my', 'hashed_password202', 'student', 'Faculty of Computing');
 
 -- Insert dummy categories
 INSERT INTO category (name, description) VALUES

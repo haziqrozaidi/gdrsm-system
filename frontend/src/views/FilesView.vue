@@ -156,7 +156,8 @@
             });
 
             if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.error || `Response status: ${response.status}`);
             }
             await logUserActivity('Upload', resource.value.name);
             const data = await response.json();
