@@ -74,7 +74,7 @@ sub log_activity {
         $c->app->log->debug("User not found.");
         return undef;  # If no user is found, return undef
     }
-};
+    };
     # Get action and resource_name from request
     # Get action and resource_name from JSON request body
     my $data = $c->req->json;
