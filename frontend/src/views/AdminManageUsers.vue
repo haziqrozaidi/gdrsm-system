@@ -60,6 +60,7 @@ const confirmRoleChange = async () => {
 
   if (confirm) {
     try {
+      await logUserActivity("Change role", selectedUser.value.full_name);
       const response = await fetch('http://127.0.0.1:3000/api/admin/users/update-role', {
         method: 'PUT',
         credentials: 'include',
@@ -72,7 +73,6 @@ const confirmRoleChange = async () => {
         }),
       });
       await fetchUsers();
-
       // Close the dialog and reset the selected user
       showChangeRoleDialog.value = false;
       selectedUser.value = null;
@@ -151,6 +151,7 @@ const confirmDeleteUser = async () => {
       }
 
       await fetchUsers();
+      await logUserActivity("Delete user", selectedUser.value.full_name);
       showDeleteUserDialog.value = false;
       selectedUser.value = null;
     } catch (error) {
@@ -159,6 +160,20 @@ const confirmDeleteUser = async () => {
   } else {
     showDeleteUserDialog.value = false;
   }
+};
+const logUserActivity = async (action, resourceName) => {
+    try {
+        await fetch('http://127.0.0.1:3000/api/logs', {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, resource_name: resourceName }),
+        });
+    } catch (error) {
+        console.error('Failed to log user activity:', error.message);
+    }
 };
 // On component mount, fetch the users
 onMounted(() => {

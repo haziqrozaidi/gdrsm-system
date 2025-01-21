@@ -272,7 +272,7 @@
             if (!response.ok) {
                 throw new Error(`Response status: ${response.status}`)
             }
-            await logUserActivity('Delete', resource.value.name);
+            await logUserActivity('Delete', resourceToDelete.value.name);
             await fetchResources()
             showDeleteResourceDialog.value = false
             resourceToDelete.value = null

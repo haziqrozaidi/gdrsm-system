@@ -132,18 +132,12 @@ onMounted(() => {
           <h2 class="text-xl font-semibold mb-4 text-gray-700">
             Quick Actions
           </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
             <Button
               label="Upload New Resource"
               icon="pi pi-upload"
               class="p-button-primary w-full"
               @click="$router.push({ name: 'files' })"
-            />
-            <Button
-              label="Create Shared Folder"
-              icon="pi pi-folder-plus"
-              class="p-button-secondary w-full"
-              @click="$router.push({ name: 'folders' })"
             />
           </div>
         </div>
@@ -163,10 +157,10 @@ onMounted(() => {
                 >
                   <div>
                     <span class="font-medium text-gray-800">{{
-                      activity.resource_name
+                      activity.action
                     }}</span>
                     <span class="block text-sm text-gray-500">{{
-                      activity.action
+                      activity.resource_name
                     }}</span>
                   </div>
                   <span class="text-sm text-gray-500">{{
