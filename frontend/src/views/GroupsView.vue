@@ -736,6 +736,7 @@
                             />
                         </IconField>
                         <Button
+                            v-if="user && user.description && !user.description.toLowerCase().includes('pelajar')"
                             label="Create New Group"
                             icon="pi pi-plus"
                             @click="showCreateGroupDialog = true"
@@ -833,6 +834,7 @@
                         <TabPanel header="Resources">
                             <div class="flex justify-end mb-3" v-if="selectedGroup.membership_status === 'Created'">
                                 <Button
+                                    v-if="user.description !== 'admin'"
                                     label="Share Resources"
                                     icon="pi pi-share-alt"
                                     @click="openShareResourceDialog"
@@ -1067,7 +1069,10 @@
                         <MultiSelect
                             id="resourceMultiSelect"
                             v-model="selectedResourcesToShare"
-                            :options="userOwnedResources"
+                            :options="userOwnedResources.filter(resource => 
+                                !groupResources.some(groupResource => 
+                                    groupResource.resource_id === resource.resource_id)
+                            )"
                             optionLabel="name"
                             placeholder="Select Resources"
                             display="chip"
@@ -1109,7 +1114,7 @@
                             :options="availableUsers.filter(user =>
                                 !groupMembers.some(member => member.user_id === user.user_id)
                             )"
-                            optionLabel="full_name"
+                            optionLabel="email"
                             placeholder="Select Users"
                             display="chip"
                             class="w-full"

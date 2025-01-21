@@ -5,12 +5,20 @@ import Card from 'primevue/card';
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 
-const username = ref('12085'); // Default username for testing
-const password = ref('S808323'); // Default password for testing
+const username = ref(''); // Default username for testing
+const password = ref(''); // Default password for testing
+
+const isUsernameInvalid = ref(false);
+const isPasswordInvalid = ref(false);
+const errorMessage = ref('');
 
 const router = useRouter(); // Get the router instance
 
 const login = async () => {
+    isUsernameInvalid.value = false;
+    isPasswordInvalid.value = false;
+    errorMessage.value = '';
+
     console.log(`Attempting login with: ${username.value}, ${password.value}`);
 
     const url = "http://127.0.0.1:3000/api/users/login";
@@ -45,11 +53,18 @@ const login = async () => {
             router.push({ name: "dashboard" }); // Replace 'Dashboard' with your target route's name
         } else {
             console.error("Login failed:", jsonResponse.message);
-            alert(jsonResponse.message || "Invalid login credentials.");
+
+            isUsernameInvalid.value = true;
+            isPasswordInvalid.value = true;
+            errorMessage.value = jsonResponse.message || "Invalid login credentials";
+            
         }
     } catch (error) {
         console.error("Error during login:", error);
-        alert("An error occurred. Please try again.");
+
+        isUsernameInvalid.value = true;
+        isPasswordInvalid.value = true;
+        errorMessage.value = "An error occurred. Please try again.";
     }
 }
 </script>
@@ -61,14 +76,17 @@ const login = async () => {
                 <h1 class="text-3xl font-bold text-center pb-4">Sign in to your account</h1>
             </template>
             <template #content>
+                <div v-if="errorMessage" class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline">{{ errorMessage }}</span>
+                </div>
                 <form class="flex flex-col gap-4" @submit.prevent="login">
                     <div class="flex flex-col gap-2">
                         <label for="username">Username</label>
-                        <InputText id="username" v-model="username" required class="w-full" />
+                        <InputText id="username" v-model="username" required class="w-full" :invalid="isUsernameInvalid"  />
                     </div>
                     <div class="flex flex-col gap-2">
                         <label for="password">Password</label>
-                        <InputText id="password" v-model="password" type="password" required class="w-full" />
+                        <InputText id="password" v-model="password" type="password" required class="w-full" :invalid="isPasswordInvalid" />
                     </div>
                     <Button class="w-full mt-4" label="Sign in" @click="login" />
                     <p class="text-center">

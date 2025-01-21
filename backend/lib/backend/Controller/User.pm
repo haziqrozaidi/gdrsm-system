@@ -88,11 +88,24 @@ sub register ($c, $user, $password) {
 
   $dbh->disconnect;
 
-  # Return success response
+  # Create a session
+  $c->session(
+    full_name   => $user->{full_name},
+    description => $user->{description},
+    login_name  => $user->{login_name},
+    email       => $user->{email},
+    logged_in   => 1,
+    expiration  => time + (8 * 60 * 60)  # 8 hours
+  );
+
+  # Return success response with user details
   $c->render(
     json => {
-      message => 'User registered successfully',
-      username => $user->{username}
+      success     => \1,
+      full_name   => $user->{full_name},
+      description => $user->{description},
+      login_name  => $user->{login_name},
+      email       => $user->{email}
     },
     status => 201
   );
