@@ -9,10 +9,11 @@ sub getResourceStatistics {
 
   # Get the username and email from the session
   my $username = $c->session('login_name');
+  my $username2 = $c->session('full_name');
   my $user_email = $c->session('email');
-    $c->app->log->debug("Session contents: " . Dumper($username));
+    $c->app->log->debug("Session contents: " . Dumper($username,$username2));
 
-  unless ($username && $user_email) {
+  unless ($username || $username2) {
     return $c->render(
       json => { error => 'User not authenticated' },
       status => 401
@@ -46,7 +47,9 @@ sub getResourceStatistics {
   }
 
   # Query total shared resources and user-uploaded resources using the email
-  my $total_shared_resources = $dbh->selectrow_array('SELECT
+  my $total_shared_resources;
+  if(defined $username){
+      $total_shared_resources = $dbh->selectrow_array('SELECT
         COUNT(*)
       FROM
         resource r
@@ -56,6 +59,19 @@ sub getResourceStatistics {
         user u ON r.user_id = u.user_id
       WHERE
         ur.user_id = (SELECT user_id FROM user WHERE username = ?)', undef, $username);
+        }
+        else{
+      $total_shared_resources = $dbh->selectrow_array('SELECT
+        COUNT(*)
+      FROM
+        resource r
+      JOIN
+        user_resource ur ON r.resource_id = ur.resource_id
+      JOIN
+        user u ON r.user_id = u.user_id
+      WHERE
+        ur.user_id = (SELECT user_id FROM user WHERE full_name = ?)', undef, $username2);
+        }
   my $user_uploaded_resources = $dbh->selectrow_array(
     "SELECT COUNT(*) FROM resource WHERE owner = ?", undef, $user_email
   );
@@ -75,8 +91,8 @@ sub getAllSharedResources {
 
   # Get the username from the session
   my $username = $c->session('login_name');
-
-  unless ($username) {
+  my $username2 = $c->session('full_name');
+  unless ($username || $username2) {
     return $c->render(
       json => {error => 'User not authenticated'},
       status => 401
@@ -114,6 +130,7 @@ sub getAllSharedResources {
 
   # Prepare and execute query to get shared resources
   my $sth = eval {
+    if(defined $username){
     my $prep = $dbh->prepare(
       'SELECT
         r.resource_id,
@@ -138,6 +155,33 @@ sub getAllSharedResources {
     );
     $prep->execute($username);
     $prep;
+  }
+  else{
+    my $prep = $dbh->prepare(
+      'SELECT
+        r.resource_id,
+        r.name,
+        r.description,
+        u.email as owner,
+        r.link,
+        ur.date_shared,
+        r.session,
+        r.semester,
+        c.name AS category_name
+      FROM
+        resource r
+      JOIN
+        user_resource ur ON r.resource_id = ur.resource_id
+      JOIN
+        user u ON r.user_id = u.user_id
+      LEFT JOIN
+        category c ON r.category_id = c.category_id
+      WHERE
+        ur.user_id = (SELECT user_id FROM user WHERE username = ?)'
+    );
+    $prep->execute($username2);
+    $prep;
+  }
   };
 
   if ($@) {
@@ -159,12 +203,12 @@ sub getAllSharedResources {
 
 sub deleteSharedResource {
   my $c = shift;
-
   # Get the username from the session
   my $username = $c->session('login_name');
+  my $username2 = $c->session('username');
   my $resource_data = $c->req->json;
 
-  unless ($username) {
+  unless ($username || $username2) {
     return $c->render(
       json => {error => 'User not authenticated'},
       status => 401
@@ -209,13 +253,22 @@ sub deleteSharedResource {
 
   # Prepare and execute delete
   my $sth = eval {
+    if(defined $username){
     my $prep = $dbh->prepare(
       'DELETE FROM user_resource
       WHERE resource_id = ? AND user_id = (SELECT user_id FROM user WHERE username = ?)'
     );
     $prep->execute($resource_data->{resource_id}, $username);
     $dbh->commit;
+    $prep;}else{my $prep = $dbh->prepare(
+      'DELETE FROM user_resource
+      WHERE resource_id = ? AND user_id = (SELECT user_id FROM user WHERE username = ?)'
+    );
+    $prep->execute($resource_data->{resource_id}, $username2);
+    $dbh->commit;
     $prep;
+
+    }
   };
 
   if ($@) {

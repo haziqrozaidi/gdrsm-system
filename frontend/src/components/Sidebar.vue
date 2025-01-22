@@ -104,6 +104,11 @@
                     route: '/files'
                 },
                 {
+                    label: 'Sharing',
+                    icon: 'pi pi-share-alt',
+                    route: '/sharing'
+                },
+                {
                     label: 'Categories',
                     icon: 'pi pi-tag',
                     route: '/categories'

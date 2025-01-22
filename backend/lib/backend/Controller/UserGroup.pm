@@ -8,8 +8,8 @@ sub getAllUserGroups {
 
     # Get the username from the session
     my $username = $c->session('login_name');
-
-    unless ($username) {
+    my $username2 = $c->session('full_name');
+    unless ($username || $username2) {
         return $c->render(
             json => {error => 'User not authenticated'},
             status => 401
@@ -47,11 +47,18 @@ sub getAllUserGroups {
 
     # Get user_id for the current user
     my $user_sth = eval {
+        if(defined $username){
         my $prep = $dbh->prepare(
             'SELECT user_id FROM user WHERE username = ?'
         );
         $prep->execute($username);
+        $prep;}else{
+            my $prep = $dbh->prepare(
+            'SELECT user_id FROM user WHERE username = ?'
+        );
+        $prep->execute($username2);
         $prep;
+        }
     };
 
     if ($@) {
@@ -116,8 +123,8 @@ sub createGroup {
 
     # Get the username from the session
     my $username = $c->session('login_name');
-
-    unless ($username) {
+    my $username2 = $c->session('username');
+    unless ($username || $username2) {
         return $c->render(
             json => {error => 'User not authenticated'},
             status => 401
@@ -166,11 +173,18 @@ sub createGroup {
 
     # Get user_id for the current user
     my $user_sth = eval {
+        if(defined $username){
         my $prep = $dbh->prepare(
             'SELECT user_id FROM user WHERE username = ?'
         );
         $prep->execute($username);
+        $prep;}else{
+            my $prep = $dbh->prepare(
+            'SELECT user_id FROM user WHERE username = ?'
+        );
+        $prep->execute($username2);
         $prep;
+        }
     };
 
     if ($@) {
