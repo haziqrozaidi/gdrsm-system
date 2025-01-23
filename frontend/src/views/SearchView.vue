@@ -196,7 +196,7 @@ onMounted(() => {
     <div class="grow bg-gray-100 p-4">
       <div class="card">
         <div class="flex justify-between mb-4">
-          <h2 class="text-2xl font-bold">Search file</h2>
+          <h2 class="text-2xl font-bold">Search Resources</h2>
         </div>
         <div class="flex flex-col gap-2.5">
           <!-- Search Bar with Category Dropdown -->
@@ -206,7 +206,7 @@ onMounted(() => {
               <input
                 type="text"
                 v-model="searchTerm"
-                placeholder="Search files..."
+                placeholder="Search resources..."
                 class="pl-10 pr-2.5 py-2.5 w-full border border-gray-300 rounded-lg text-sm"
               />
             </div>
