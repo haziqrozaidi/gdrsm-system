@@ -1,4 +1,4 @@
-# Project Name
+# GDRSM System
 
 > A web system for managing and sharing Google Drive resources within UTM's Faculty of Computing.
 
